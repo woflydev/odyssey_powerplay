@@ -216,9 +216,13 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
         telemetry.addLine(String.format(Locale.ENGLISH, "Translation Y: %.2f feet", detection.pose.y*FEET_PER_METER));
         telemetry.addLine(String.format(Locale.ENGLISH, "Translation Z: %.2f feet", detection.pose.z*FEET_PER_METER));
 
-        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Yaw: %.2f degrees", Math.toDegrees(detection.pose.yaw)));
-        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Pitch: %.2f degrees", Math.toDegrees(detection.pose.pitch)));
-        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Roll: %.2f degrees", Math.toDegrees(detection.pose.roll)));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Yaw: %.2f degrees", yaw));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Pitch: %.2f degrees", pitch));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Roll: %.2f degrees", roll));
+
+        //telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Yaw: %.2f degrees", Math.toDegrees(detection.pose.yaw)));
+        //telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Pitch: %.2f degrees", Math.toDegrees(detection.pose.pitch)));
+        //telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Roll: %.2f degrees", Math.toDegrees(detection.pose.roll)));
     }
 
     private void AutoLeft() {

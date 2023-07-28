@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp()
-public class Slide extends OpMode {
+public class Manual extends OpMode {
 
     DcMotor leftMotor = null;
     DcMotor rightMotor = null;
