@@ -10,49 +10,70 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp()
 public class Manual extends OpMode {
 
-    DcMotor leftMotor = null;
-    DcMotor rightMotor = null;
-    DcMotor frontLMotor = null;
-    DcMotor frontRMotor = null;
-    DcMotorEx ArmMotor = null;
-    Servo claw;
-    boolean clawOpen = false;
+    private DcMotor backLM = null;
+    private DcMotor backRM = null;
+    private DcMotor frontLM = null;
+    private DcMotor frontRM = null;
+    private DcMotorEx armM = null;
+    private Servo claw;
+    private boolean clawOpen = false;
 
-    int setPos;
+    private int setPos;
 
-    //INTRODUCE VARIABLES HERE
+    private static final float MAX_ACCELERATION_DEVIATION = 0.1f;
+
+    // --------------------------------------------------------------
+
+    private static final String FRONT_LEFT = "frontL";
+    private static final String FRONT_RIGHT = "frontR";
+    private static final String BACK_LEFT = "backL";
+    private static final String BACK_RIGHT = "backR";
+    private static final String SERVO_CLAW = "Servo";
+    private static final String ARM_MOTOR = "armMotor";
+
+    // --------------------------------------------------------------
 
     public void init() {
-        claw = hardwareMap.get(Servo.class, "Servo");
+        claw = hardwareMap.get(Servo.class, SERVO_CLAW);
 
-        leftMotor = hardwareMap.get(DcMotor.class, "backL");
-        rightMotor = hardwareMap.get(DcMotor.class, "backR");
+        backLM = hardwareMap.get(DcMotor.class, BACK_LEFT);
+        backRM = hardwareMap.get(DcMotor.class, BACK_RIGHT);
 
-        frontLMotor = hardwareMap.get(DcMotor.class, "frontL");
-        frontRMotor = hardwareMap.get(DcMotor.class, "frontR");
-        frontRMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLM = hardwareMap.get(DcMotor.class, FRONT_LEFT);
+        frontRM = hardwareMap.get(DcMotor.class, FRONT_RIGHT); frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        ArmMotor = hardwareMap.get(DcMotorEx.class, "armMotor");
-        ArmMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        ArmMotor.setTargetPosition(0);
-        ArmMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        ArmMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
+        armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armM.setTargetPosition(0);
+        armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         telemetry.setAutoClear(false);
     }
+
+    private double stabilize(double new_accel, double current_accel, double max_dev) {
+        double dev = new_accel - current_accel;
+        return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
+    }
+
+    float currentAccel1;
+    float currentAccel2;
+    float currentAccel3;
+    float currentAccel4;
 
     public void loop() {
         telemetry.clear();
         if (setPos < 4000) {
             setPos += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
         }
+
         int ArmPos0 = 0;
         int ArmPos1 = 1650;
         int ArmPos2 = 2700;
         int ArmPos3 = 3800;
 
         // Claw Code
-        if(gamepad2.left_bumper) {
+        if (gamepad2.left_bumper) {
             // closed
             clawOpen = false;
             claw.setPosition(1);
@@ -68,8 +89,8 @@ public class Manual extends OpMode {
             speedModA = 2;
         }
 
-        int slidePos = ArmMotor.getCurrentPosition();
-        ArmMotor.setVelocity(1800 / speedModA);
+        int slidePos = armM.getCurrentPosition();
+        armM.setVelocity((double)1800 / speedModA);
         telemetry.addData("Current Position", slidePos);
         if (gamepad2.dpad_down) {
             setPos = ArmPos0;
@@ -87,7 +108,7 @@ public class Manual extends OpMode {
 
         telemetry.addData("Setpos", setPos);
 
-        ArmMotor.setTargetPosition(setPos); // joystick position or key
+        armM.setTargetPosition(setPos); // joystick position or key
 
         // Drive --------------------------------------------------------------------
         // assign speed modifier
@@ -109,9 +130,14 @@ public class Manual extends OpMode {
         final double v3 = r * Math.sin(robotAngle) + rightX; //front left
         final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
 
-        frontLMotor.setPower(v3 / speedModB);
-        frontRMotor.setPower(v2 / speedModB);
-        leftMotor.setPower(v1 / speedModB);
-        rightMotor.setPower(v4 / speedModB);
+        double stable_v1 = stabilize(v1, currentAccel1, MAX_ACCELERATION_DEVIATION);
+        double stable_v2 = stabilize(v2, currentAccel2, MAX_ACCELERATION_DEVIATION);
+        double stable_v3 = stabilize(v3, currentAccel3, MAX_ACCELERATION_DEVIATION);
+        double stable_v4 = stabilize(v4, currentAccel4, MAX_ACCELERATION_DEVIATION);
+
+        frontLM.setPower(stable_v3 / speedModB);
+        frontRM.setPower(stable_v2 / speedModB);
+        backLM.setPower(stable_v1 / speedModB);
+        backRM.setPower(stable_v4 / speedModB);
     }
 }
