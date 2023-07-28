@@ -10,6 +10,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp()
 public class Manual extends OpMode {
 
+    // -------------------------------------------------------------- VAR CONFIG
+
     private DcMotor backLM = null;
     private DcMotor backRM = null;
     private DcMotor frontLM = null;
@@ -22,7 +24,7 @@ public class Manual extends OpMode {
 
     private static final float MAX_ACCELERATION_DEVIATION = 0.1f;
 
-    // --------------------------------------------------------------
+    // -------------------------------------------------------------- MOTOR CONFIG
 
     private static final String FRONT_LEFT = "frontL";
     private static final String FRONT_RIGHT = "frontR";
@@ -31,14 +33,15 @@ public class Manual extends OpMode {
     private static final String SERVO_CLAW = "Servo";
     private static final String ARM_MOTOR = "armMotor";
 
-    // --------------------------------------------------------------
+    // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_HIGH = 3800;
 
-    //---------------------------------------------------------------
+    // -------------------------------------------------------------- MAIN INIT
+
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
 
@@ -68,6 +71,12 @@ public class Manual extends OpMode {
     double current_v4 = 0;
 
     public void loop() {
+        // -------------------------------------------------------------- MACROS
+
+
+
+        // -------------------------------------------------------------- MANUAL
+
         telemetry.clear();
         if (setPos < 4000) {
             setPos += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
