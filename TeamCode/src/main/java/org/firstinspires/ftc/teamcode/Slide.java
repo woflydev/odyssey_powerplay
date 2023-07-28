@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 @TeleOp()
 public class Slide extends OpMode {
@@ -24,7 +23,6 @@ public class Slide extends OpMode {
     //INTRODUCE VARIABLES HERE
 
     public void init() {
-
         claw = hardwareMap.get(Servo.class, "Servo");
 
         leftMotor = hardwareMap.get(DcMotor.class, "backL");
@@ -41,10 +39,7 @@ public class Slide extends OpMode {
         ArmMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         telemetry.setAutoClear(false);
-
     }
-
-
 
     public void loop() {
         telemetry.clear();
@@ -93,9 +88,6 @@ public class Slide extends OpMode {
         telemetry.addData("Setpos", setPos);
 
         ArmMotor.setTargetPosition(setPos); // joystick position or key
-
-
-
 
         // Drive --------------------------------------------------------------------
         // assign speed modifier

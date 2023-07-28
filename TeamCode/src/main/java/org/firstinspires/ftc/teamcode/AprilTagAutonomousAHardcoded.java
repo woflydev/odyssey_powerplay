@@ -27,11 +27,16 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.openftc.apriltag.AprilTagDetection;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvCameraRotation;
 import java.util.ArrayList;
+import java.util.Locale;
 
 @Autonomous(name="AutonomousAHardcoded", group="Robot")
 public class AprilTagAutonomousAHardcoded extends LinearOpMode
@@ -73,9 +78,7 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
         aprilTagDetectionPipeline = new AprilTagDetectionPipeline(tagsize, fx, fy, cx, cy);
 
         camera.setPipeline(aprilTagDetectionPipeline);
-        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
-
-        {
+        camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened()
             {
@@ -121,39 +124,38 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
                     }
                 }
 
-                if(tagFound)
+                if (tagFound)
                 {
                     telemetry.addLine("Tag of interest is in sight!\n\nLocation data:");
-                    tagToTelemetry(tagOfInterest);
+                    TagTelemetry(tagOfInterest);
                 }
                 else
                 {
                     telemetry.addLine("Don't see tag of interest :(");
 
-                    if(tagOfInterest == null)
+                    if (tagOfInterest == null)
                     {
                         telemetry.addLine("(The tag has never been seen)");
                     }
                     else
                     {
                         telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
-                        tagToTelemetry(tagOfInterest);
+                        TagTelemetry(tagOfInterest);
                     }
                 }
-
             }
             else
             {
                 telemetry.addLine("Don't see tag of interest :(");
 
-                if(tagOfInterest == null)
+                if (tagOfInterest == null)
                 {
                     telemetry.addLine("(The tag has never been seen)");
                 }
                 else
                 {
                     telemetry.addLine("\nBut we HAVE seen the tag before; last seen at:");
-                    tagToTelemetry(tagOfInterest);
+                    TagTelemetry(tagOfInterest);
                 }
 
             }
@@ -168,10 +170,10 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
          */
 
         /* Update the telemetry */
-        if(tagOfInterest != null)
+        if (tagOfInterest != null)
         {
             telemetry.addLine("Tag snapshot:\n");
-            tagToTelemetry(tagOfInterest);
+            TagTelemetry(tagOfInterest);
             telemetry.update();
         }
         else
@@ -182,39 +184,44 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
 
 
         /* Actually do something useful */
-        if(tagOfInterest == null || tagOfInterest.id == LEFT){
+        if (tagOfInterest == null || tagOfInterest.id == LEFT) {
             claw.setPosition(1); // grab cone
             sleep(20);
-            left();
-            forward();
-        }else if(tagOfInterest.id == MIDDLE){
+            AutoLeft();
+            AutoForward();
+        } else if (tagOfInterest.id == MIDDLE) {
             claw.setPosition(1);
             sleep(20);
-            forward();
-        }else{
+            AutoForward();
+        } else {
             claw.setPosition(1);
             sleep(20);
-            right();
-            forward();
+            AutoRight();
+            AutoForward();
         }
-
 
         /* You wouldn't have this in your autonomous, this is just to prevent the sample from ending */
         while (opModeIsActive()) {sleep(20);}
     }
 
-    void tagToTelemetry(AprilTagDetection detection)
+    private void TagTelemetry(AprilTagDetection detection)
     {
-        telemetry.addLine(String.format("\nDetected tag ID=%d", detection.id));
-        telemetry.addLine(String.format("Translation X: %.2f feet", detection.pose.x*FEET_PER_METER));
-        telemetry.addLine(String.format("Translation Y: %.2f feet", detection.pose.y*FEET_PER_METER));
-        telemetry.addLine(String.format("Translation Z: %.2f feet", detection.pose.z*FEET_PER_METER));
-        telemetry.addLine(String.format("Rotation Yaw: %.2f degrees", Math.toDegrees(detection.pose.yaw)));
-        telemetry.addLine(String.format("Rotation Pitch: %.2f degrees", Math.toDegrees(detection.pose.pitch)));
-        telemetry.addLine(String.format("Rotation Roll: %.2f degrees", Math.toDegrees(detection.pose.roll)));
+        Orientation or = Orientation.getOrientation(detection.pose.R, AxesReference.INTRINSIC, AxesOrder.YXZ, AngleUnit.DEGREES);
+        float roll = or.firstAngle;
+        float pitch = or.secondAngle;
+        float yaw = or.thirdAngle;
+
+        telemetry.addLine(String.format(Locale.ENGLISH, "\nDetected tag ID=%d", detection.id));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Translation X: %.2f feet", detection.pose.x*FEET_PER_METER));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Translation Y: %.2f feet", detection.pose.y*FEET_PER_METER));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Translation Z: %.2f feet", detection.pose.z*FEET_PER_METER));
+
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Yaw: %.2f degrees", Math.toDegrees(detection.pose.yaw)));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Pitch: %.2f degrees", Math.toDegrees(detection.pose.pitch)));
+        telemetry.addLine(String.format(Locale.ENGLISH, "Rotation Roll: %.2f degrees", Math.toDegrees(detection.pose.roll)));
     }
 
-    void left() {
+    private void AutoLeft() {
         leftFrontDrive.setPower(-0.5);
         rightFrontDrive.setPower(0.5);
         leftBackDrive.setPower(0.5);
@@ -226,7 +233,7 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
         rightBackDrive.setPower(0);
     }
 
-    void right() {
+    private void AutoRight() {
         leftFrontDrive.setPower(0.5);
         rightFrontDrive.setPower(-0.5);
         leftBackDrive.setPower(-0.5);
@@ -238,24 +245,24 @@ public class AprilTagAutonomousAHardcoded extends LinearOpMode
         rightBackDrive.setPower(0);
     }
 
-    void back() {
+    private void AutoForward() {
+        leftFrontDrive.setPower(0.5);
+        rightFrontDrive.setPower(0.5);
+        leftBackDrive.setPower(0.5);
+        rightBackDrive.setPower(0.5);
+        sleep(1400);
+        leftFrontDrive.setPower(0);
+        rightFrontDrive.setPower(0);
+        leftBackDrive.setPower(0);
+        rightBackDrive.setPower(0);
+    }
+
+    private void AutoBack() {
         leftFrontDrive.setPower(-0.5);
         rightFrontDrive.setPower(-0.5);
         leftBackDrive.setPower(-0.5);
         rightBackDrive.setPower(-0.5);
         sleep(1000);
-        leftFrontDrive.setPower(0);
-        rightFrontDrive.setPower(0);
-        leftBackDrive.setPower(0);
-        rightBackDrive.setPower(0);
-    }
-
-    void forward() {
-        leftFrontDrive.setPower(0.5);
-        rightFrontDrive.setPower(0.5);
-        leftBackDrive.setPower(0.5);
-        rightBackDrive.setPower(0.5);
-        sleep(1400);
         leftFrontDrive.setPower(0);
         rightFrontDrive.setPower(0);
         leftBackDrive.setPower(0);
