@@ -33,6 +33,12 @@ public class Manual extends OpMode {
 
     // --------------------------------------------------------------
 
+    private static final int JUNCTION_OFF = 0;
+    private static final int JUNCTION_LOW = 1650;
+    private static final int JUNCTION_MID = 2700;
+    private static final int JUNCTION_HIGH = 3800;
+
+    //---------------------------------------------------------------
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
 
@@ -56,21 +62,16 @@ public class Manual extends OpMode {
         return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
     }
 
-    float currentAccel1;
-    float currentAccel2;
-    float currentAccel3;
-    float currentAccel4;
+    double current_v1 = 0;
+    double current_v2 = 0;
+    double current_v3 = 0;
+    double current_v4 = 0;
 
     public void loop() {
         telemetry.clear();
         if (setPos < 4000) {
             setPos += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
         }
-
-        int ArmPos0 = 0;
-        int ArmPos1 = 1650;
-        int ArmPos2 = 2700;
-        int ArmPos3 = 3800;
 
         // Claw Code
         if (gamepad2.left_bumper) {
@@ -84,25 +85,26 @@ public class Manual extends OpMode {
         }
         telemetry.addData("Claw Open:", clawOpen);
 
-        int speedModA = 1;
+        int armSpeedModifier = 1;
         if (gamepad2.x) {
-            speedModA = 2;
+            armSpeedModifier = 2;
         }
 
         int slidePos = armM.getCurrentPosition();
-        armM.setVelocity((double)1800 / speedModA);
+        armM.setVelocity((double)1800 / armSpeedModifier);
         telemetry.addData("Current Position", slidePos);
+
         if (gamepad2.dpad_down) {
-            setPos = ArmPos0;
+            setPos = JUNCTION_OFF;
             telemetry.addData("target pos", setPos);
         } else if (gamepad2.dpad_left) {
-            setPos = ArmPos1;
+            setPos = JUNCTION_LOW;
             telemetry.addData("target pos", setPos);
         } else if (gamepad2.dpad_right) {
-            setPos = ArmPos2;
+            setPos = JUNCTION_MID;
             telemetry.addData("target pos", setPos);
         } else if (gamepad2.dpad_up) {
-            setPos = ArmPos3;
+            setPos = JUNCTION_HIGH;
             telemetry.addData("target pos", setPos);
         }
 
@@ -112,13 +114,13 @@ public class Manual extends OpMode {
 
         // Drive --------------------------------------------------------------------
         // assign speed modifier
-        int speedModB = 2;
+        int driveSpeedModifier = 2;
 
         if (gamepad1.right_bumper) {
-            speedModB = 1;
+            driveSpeedModifier = 1;
         }
         if (gamepad1.left_bumper) {
-            speedModB = 3;
+            driveSpeedModifier = 3;
         }
 
         // Mecanum Drive
@@ -130,14 +132,19 @@ public class Manual extends OpMode {
         final double v3 = r * Math.sin(robotAngle) + rightX; //front left
         final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
 
-        double stable_v1 = stabilize(v1, currentAccel1, MAX_ACCELERATION_DEVIATION);
-        double stable_v2 = stabilize(v2, currentAccel2, MAX_ACCELERATION_DEVIATION);
-        double stable_v3 = stabilize(v3, currentAccel3, MAX_ACCELERATION_DEVIATION);
-        double stable_v4 = stabilize(v4, currentAccel4, MAX_ACCELERATION_DEVIATION);
+        double stable_v1 = stabilize(v1, current_v1, MAX_ACCELERATION_DEVIATION);
+        double stable_v2 = stabilize(v2, current_v2, MAX_ACCELERATION_DEVIATION);
+        double stable_v3 = stabilize(v3, current_v3, MAX_ACCELERATION_DEVIATION);
+        double stable_v4 = stabilize(v4, current_v4, MAX_ACCELERATION_DEVIATION);
 
-        frontLM.setPower(stable_v3 / speedModB);
-        frontRM.setPower(stable_v2 / speedModB);
-        backLM.setPower(stable_v1 / speedModB);
-        backRM.setPower(stable_v4 / speedModB);
+        current_v1 = stable_v1;
+        current_v2 = stable_v2;
+        current_v3 = stable_v3;
+        current_v4 = stable_v4;
+
+        frontLM.setPower(stable_v3 / driveSpeedModifier);
+        frontRM.setPower(stable_v2 / driveSpeedModifier);
+        backLM.setPower(stable_v1 / driveSpeedModifier);
+        backRM.setPower(stable_v4 / driveSpeedModifier);
     }
 }
