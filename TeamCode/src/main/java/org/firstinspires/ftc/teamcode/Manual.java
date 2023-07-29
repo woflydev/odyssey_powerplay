@@ -57,11 +57,41 @@ public class Manual extends OpMode {
         return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
     }
 
-    private void Forward(double power, int timeout) {
-        frontLM.setPower(power);
-        frontRM.setPower(power);
-        backLM.setPower(power);
-        backRM.setPower(power);
+    private void Move(double power, int timeout, boolean forward) {
+        if (forward) {
+            frontLM.setPower(power);
+            frontRM.setPower(power);
+            backLM.setPower(power);
+            backRM.setPower(power);
+        }
+        else {
+            frontLM.setPower(-power);
+            frontRM.setPower(-power);
+            backLM.setPower(-power);
+            backRM.setPower(-power);
+        }
+
+        try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
+
+        frontLM.setPower(0);
+        frontRM.setPower(0);
+        backLM.setPower(0);
+        backRM.setPower(0);
+    }
+
+    private void Turn(double power, int timeout, boolean right) {
+        if (right) {
+            frontLM.setPower(power);
+            frontRM.setPower(-power);
+            backLM.setPower(-power);
+            backRM.setPower(power);
+        }
+        else {
+            frontLM.setPower(-power);
+            frontRM.setPower(power);
+            backLM.setPower(power);
+            backRM.setPower(-power);
+        }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
 
@@ -99,22 +129,35 @@ public class Manual extends OpMode {
 
         if (gamepad1.left_bumper) {
             if (clawOpen) {
-                Forward(0.5, 100);
+                Move(0.5, 100, true); // TODO: should be the length of the arm and front of robot
 
                 clawOpen = false;
                 claw.setPosition(1); // close claw
-                claw.setPosition(JUNCTION_STANDBY);
+                armM.setTargetPosition(JUNCTION_MID); // lift cone clear of stack
 
+                Turn(0.5, 500, true); // TODO: 180 turn, timeout needs tweaking
+
+                armM.setTargetPosition(JUNCTION_STANDBY);
             }
             else {
                 clawOpen = true;
                 claw.setPosition(0.43); // open claw
+
+                Move(0.5, 120, false); // TODO: 180 turn, tune timeout
+
+                armM.setTargetPosition(JUNCTION_OFF);
             }
         }
 
-        else if (gamepad1.right_bumper && clawOpen) { // manual close without macro
-            clawOpen = false;
-            claw.setPosition(1);
+        else if (gamepad1.right_bumper) { // manual close without auto
+            if (clawOpen) {
+                clawOpen = false;
+                claw.setPosition(1);
+            }
+            else {
+                clawOpen = true;
+                claw.setPosition(0.43);
+            }
         }
 
         // -------------------------------------------------------------- ARM ADJUSTMENT
