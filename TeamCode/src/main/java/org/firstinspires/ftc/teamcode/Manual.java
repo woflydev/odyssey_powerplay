@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import static java.lang.Thread.sleep;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -9,9 +11,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp()
 public class Manual extends OpMode {
-
     // -------------------------------------------------------------- VAR CONFIG
-
     private DcMotor backLM = null;
     private DcMotor backRM = null;
     private DcMotor frontLM = null;
@@ -20,7 +20,13 @@ public class Manual extends OpMode {
     private Servo claw;
     private boolean clawOpen = false;
 
-    private int setPos;
+    private int currentArmPosition = 0;
+    private int targetArmPosition = 0;
+
+    private double current_v1 = 0;
+    private double current_v2 = 0;
+    private double current_v3 = 0;
+    private double current_v4 = 0;
 
     private static final float MAX_ACCELERATION_DEVIATION = 0.1f;
 
@@ -36,14 +42,38 @@ public class Manual extends OpMode {
     // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
+    private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_HIGH = 3800;
 
+    private static final int ARM_ADJUSTMENT_INCREMENT = 10;
+    private static final int ARM_BOOST_MODIFIER = 2;
+
     // -------------------------------------------------------------- MAIN INIT
+
+    private double Stabilize(double new_accel, double current_accel, double max_dev) {
+        double dev = new_accel - current_accel;
+        return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
+    }
+
+    private void Forward(double power, int timeout) {
+        frontLM.setPower(power);
+        frontRM.setPower(power);
+        backLM.setPower(power);
+        backRM.setPower(power);
+
+        try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
+
+        frontLM.setPower(0);
+        frontRM.setPower(0);
+        backLM.setPower(0);
+        backRM.setPower(0);
+    }
 
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
+        claw.setPosition(1);
 
         backLM = hardwareMap.get(DcMotor.class, BACK_LEFT);
         backRM = hardwareMap.get(DcMotor.class, BACK_RIGHT);
@@ -60,68 +90,91 @@ public class Manual extends OpMode {
         telemetry.setAutoClear(false);
     }
 
-    private double stabilize(double new_accel, double current_accel, double max_dev) {
-        double dev = new_accel - current_accel;
-        return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
-    }
-
-    double current_v1 = 0;
-    double current_v2 = 0;
-    double current_v3 = 0;
-    double current_v4 = 0;
-
     public void loop() {
+        // -------------------------------------------------------------- PRELIMINARIES
+        telemetry.clear();
+        currentArmPosition = armM.getCurrentPosition();
+
         // -------------------------------------------------------------- MACROS
 
+        if (gamepad1.left_bumper) {
+            if (clawOpen) {
+                Forward(0.5, 100);
 
+                clawOpen = false;
+                claw.setPosition(1); // close claw
+                claw.setPosition(JUNCTION_STANDBY);
 
-        // -------------------------------------------------------------- MANUAL
-
-        telemetry.clear();
-        if (setPos < 4000) {
-            setPos += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
+            }
+            else {
+                clawOpen = true;
+                claw.setPosition(0.43); // open claw
+            }
         }
 
-        // Claw Code
+        else if (gamepad1.right_bumper && clawOpen) { // manual close without macro
+            clawOpen = false;
+            claw.setPosition(1);
+        }
+
+        // -------------------------------------------------------------- ARM ADJUSTMENT
+
+        // best used for lining up arm for the topmost cone
+        if (gamepad1.b) {
+            targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+        }
+
+        else if (gamepad1.a) {
+            targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
+        }
+
+        armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER);
+        armM.setTargetPosition(targetArmPosition); // joystick position or key
+
+        // -------------------------------------------------------------- OLD MANUAL CODE
+
+        /*if (targetArmPosition < 4000) {
+            targetArmPosition += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
+        }
+
         if (gamepad2.left_bumper) {
-            // closed
+            // claw close
             clawOpen = false;
             claw.setPosition(1);
         } else if (gamepad2.right_bumper) {
-            // open
+            // claw open
             clawOpen = true;
             claw.setPosition(0.43);
         }
-        telemetry.addData("Claw Open:", clawOpen);
 
         int armSpeedModifier = 1;
         if (gamepad2.x) {
             armSpeedModifier = 2;
         }
 
-        int slidePos = armM.getCurrentPosition();
+        currentArmPosition = armM.getCurrentPosition();
+
         armM.setVelocity((double)1800 / armSpeedModifier);
-        telemetry.addData("Current Position", slidePos);
 
         if (gamepad2.dpad_down) {
-            setPos = JUNCTION_OFF;
-            telemetry.addData("target pos", setPos);
+            targetArmPosition = JUNCTION_OFF;
+            telemetry.addData("target pos", targetArmPosition);
         } else if (gamepad2.dpad_left) {
-            setPos = JUNCTION_LOW;
-            telemetry.addData("target pos", setPos);
+            targetArmPosition = JUNCTION_LOW;
+            telemetry.addData("target pos", targetArmPosition);
         } else if (gamepad2.dpad_right) {
-            setPos = JUNCTION_MID;
-            telemetry.addData("target pos", setPos);
+            targetArmPosition = JUNCTION_MID;
+            telemetry.addData("target pos", targetArmPosition);
         } else if (gamepad2.dpad_up) {
-            setPos = JUNCTION_HIGH;
-            telemetry.addData("target pos", setPos);
+            targetArmPosition = JUNCTION_HIGH;
+            telemetry.addData("target pos", targetArmPosition);
         }
 
-        telemetry.addData("Setpos", setPos);
+        armM.setTargetPosition(targetArmPosition);
+        */
 
-        armM.setTargetPosition(setPos); // joystick position or key
+        // -------------------------------------------------------------- DRIVE
 
-        // Drive --------------------------------------------------------------------
         // assign speed modifier
         int driveSpeedModifier = 2;
 
@@ -141,10 +194,10 @@ public class Manual extends OpMode {
         final double v3 = r * Math.sin(robotAngle) + rightX; //front left
         final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
 
-        double stable_v1 = stabilize(v1, current_v1, MAX_ACCELERATION_DEVIATION);
-        double stable_v2 = stabilize(v2, current_v2, MAX_ACCELERATION_DEVIATION);
-        double stable_v3 = stabilize(v3, current_v3, MAX_ACCELERATION_DEVIATION);
-        double stable_v4 = stabilize(v4, current_v4, MAX_ACCELERATION_DEVIATION);
+        double stable_v1 = Stabilize(v1, current_v1, MAX_ACCELERATION_DEVIATION);
+        double stable_v2 = Stabilize(v2, current_v2, MAX_ACCELERATION_DEVIATION);
+        double stable_v3 = Stabilize(v3, current_v3, MAX_ACCELERATION_DEVIATION);
+        double stable_v4 = Stabilize(v4, current_v4, MAX_ACCELERATION_DEVIATION);
 
         current_v1 = stable_v1;
         current_v2 = stable_v2;
@@ -155,5 +208,11 @@ public class Manual extends OpMode {
         frontRM.setPower(stable_v2 / driveSpeedModifier);
         backLM.setPower(stable_v1 / driveSpeedModifier);
         backRM.setPower(stable_v4 / driveSpeedModifier);
+
+        // -------------------------------------------------------------- TELEMETRY
+
+        telemetry.addData("Claw Open: ", clawOpen);
+        telemetry.addData("Current Position: ", currentArmPosition);
+        telemetry.addData("Target Arm Position: ", targetArmPosition);
     }
 }
