@@ -86,15 +86,15 @@ public class Manual extends OpMode {
 
     private void Turn(double power, int timeout, boolean right) {
         if (right) {
-            frontLM.setPower(power);
+            frontLM.setPower(-power); // left motors are inverted
             frontRM.setPower(-power);
-            backLM.setPower(power);
+            backLM.setPower(-power);
             backRM.setPower(-power);
         }
         else {
-            frontLM.setPower(-power);
+            frontLM.setPower(power); // see above
             frontRM.setPower(power);
-            backLM.setPower(-power);
+            backLM.setPower(power);
             backRM.setPower(power);
         }
 
