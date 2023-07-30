@@ -28,6 +28,8 @@ public class Manual extends OpMode {
     private double current_v3 = 0;
     private double current_v4 = 0;
 
+    private boolean ADJUSTMENT_ALLOWED = true;
+
     private static final float MAX_ACCELERATION_DEVIATION = 0.1f;
 
     // -------------------------------------------------------------- MOTOR CONFIG
@@ -128,7 +130,7 @@ public class Manual extends OpMode {
         // -------------------------------------------------------------- MACROS
 
         if (gamepad1.left_bumper) {
-            if (clawOpen) {
+            if (clawOpen) { // obtain cone
                 Move(0.5, 100, true); // TODO: should be the length of the arm and front of robot
 
                 clawOpen = false;
@@ -138,14 +140,18 @@ public class Manual extends OpMode {
                 Turn(0.5, 500, true); // TODO: 180 turn, timeout needs tweaking
 
                 armM.setTargetPosition(JUNCTION_STANDBY);
+
+                ADJUSTMENT_ALLOWED = false;
             }
-            else {
+            else { // drop off cone
                 clawOpen = true;
                 claw.setPosition(0.43); // open claw
 
-                Move(0.5, 120, false); // TODO: 180 turn, tune timeout
+                Move(0.5, 200, false); // TODO: move back, tune timeout
 
                 armM.setTargetPosition(JUNCTION_OFF);
+
+                ADJUSTMENT_ALLOWED = true;
             }
         }
 
@@ -171,8 +177,7 @@ public class Manual extends OpMode {
             targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
         }
 
-        armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER);
-        armM.setTargetPosition(targetArmPosition); // joystick position or key
+        if (ADJUSTMENT_ALLOWED) { armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); } // joystick position or key
 
         // -------------------------------------------------------------- OLD MANUAL CODE
 
