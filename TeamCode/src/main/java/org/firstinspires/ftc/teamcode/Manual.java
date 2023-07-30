@@ -57,9 +57,9 @@ public class Manual extends OpMode {
 
     // -------------------------------------------------------------- MAIN INIT
 
-    private double Stabilize(double new_accel, double current_accel, double max_dev) {
+    private double Stabilize(double new_accel, double current_accel) {
         double dev = new_accel - current_accel;
-        return Math.abs(dev) > max_dev ? current_accel + max_dev * dev / Math.abs(dev) : new_accel;
+        return Math.abs(dev) > MAX_ACCELERATION_DEVIATION ? current_accel + MAX_ACCELERATION_DEVIATION * dev / Math.abs(dev) : new_accel;
     }
 
     private void Move(double power, int timeout, boolean forward) {
@@ -202,10 +202,10 @@ public class Manual extends OpMode {
         final double v3 = r * Math.sin(robotAngle) + rightX; //front left
         final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
 
-        double stable_v1 = Stabilize(v1, current_v1, MAX_ACCELERATION_DEVIATION);
-        double stable_v2 = Stabilize(v2, current_v2, MAX_ACCELERATION_DEVIATION);
-        double stable_v3 = Stabilize(v3, current_v3, MAX_ACCELERATION_DEVIATION);
-        double stable_v4 = Stabilize(v4, current_v4, MAX_ACCELERATION_DEVIATION);
+        double stable_v1 = Stabilize(v1, current_v1);
+        double stable_v2 = Stabilize(v2, current_v2);
+        double stable_v3 = Stabilize(v3, current_v3);
+        double stable_v4 = Stabilize(v4, current_v4);
 
         current_v1 = stable_v1;
         current_v2 = stable_v2;
