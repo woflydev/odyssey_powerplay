@@ -64,15 +64,15 @@ public class Manual extends OpMode {
 
     private void Move(double power, int timeout, boolean forward) {
         if (forward) {
-            frontLM.setPower(power);
+            frontLM.setPower(-power);
             frontRM.setPower(power);
-            backLM.setPower(power);
+            backLM.setPower(-power);
             backRM.setPower(power);
         }
         else {
-            frontLM.setPower(-power);
+            frontLM.setPower(power);
             frontRM.setPower(-power);
-            backLM.setPower(-power);
+            backLM.setPower(power);
             backRM.setPower(-power);
         }
 
@@ -137,14 +137,14 @@ public class Manual extends OpMode {
             if (clawOpen) { // obtain cone
                 ADJUSTMENT_ALLOWED = false;
 
-                Move(0.8, 500, true); // TODO: should be the length of the arm and front of robot
+                Move(0.9, 250, true); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close claw
                 clawOpen = false;
                 armM.setTargetPosition(JUNCTION_LOW); // lift cone clear of stack
 
-                Move(0.75, 500, false); // TODO: tune this to clear cone stack
-                Turn(0.8, 500, true); // TODO: 180 turn, timeout needs tweaking
+                Move(0.75, 300, false); // TODO: tune this to clear cone stack
+                Turn(0.95, 800, true); // TODO: 180 turn, timeout needs tweaking
 
                 armM.setTargetPosition(JUNCTION_STANDBY);
             }
@@ -176,6 +176,7 @@ public class Manual extends OpMode {
         // best used for lining up arm for the topmost cone
         if (gamepad1.dpad_down) {
             targetArmPosition = JUNCTION_OFF;
+            Move(0.5, 500, true);
         }
 
         else if (gamepad1.b && armM.getCurrentPosition() < 4000 - ARM_ADJUSTMENT_INCREMENT) {
