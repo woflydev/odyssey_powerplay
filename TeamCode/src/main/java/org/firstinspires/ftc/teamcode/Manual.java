@@ -41,6 +41,9 @@ public class Manual extends OpMode {
     private static final String SERVO_CLAW = "Servo";
     private static final String ARM_MOTOR = "armMotor";
 
+    private static final double CLAW_CLOSE = 0.62;
+    private static final double CLAW_OPEN = 0.43;
+
     // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
@@ -105,7 +108,7 @@ public class Manual extends OpMode {
 
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
-        claw.setPosition(1);
+        claw.setPosition(CLAW_CLOSE);
 
         backLM = hardwareMap.get(DcMotor.class, BACK_LEFT);
         backRM = hardwareMap.get(DcMotor.class, BACK_RIGHT);
@@ -131,23 +134,24 @@ public class Manual extends OpMode {
 
         if (gamepad1.left_bumper) {
             if (clawOpen) { // obtain cone
-                Move(0.5, 100, true); // TODO: should be the length of the arm and front of robot
+                ADJUSTMENT_ALLOWED = false;
 
+                Move(0.8, 500, true); // TODO: should be the length of the arm and front of robot
+
+                claw.setPosition(CLAW_CLOSE); // close claw
                 clawOpen = false;
-                claw.setPosition(1); // close claw
-                armM.setTargetPosition(JUNCTION_MID); // lift cone clear of stack
+                armM.setTargetPosition(JUNCTION_LOW); // lift cone clear of stack
 
-                Turn(0.5, 500, true); // TODO: 180 turn, timeout needs tweaking
+                Move(0.75, 500, false); // TODO: tune this to clear cone stack
+                Turn(0.8, 500, true); // TODO: 180 turn, timeout needs tweaking
 
                 armM.setTargetPosition(JUNCTION_STANDBY);
-
-                ADJUSTMENT_ALLOWED = false;
             }
             else { // drop off cone
+                claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
-                claw.setPosition(0.43); // open claw
 
-                Move(0.5, 200, false); // TODO: move back, tune timeout
+                Move(0.85, 150, false); // TODO: move back, tune timeout
 
                 armM.setTargetPosition(JUNCTION_OFF);
 
@@ -157,23 +161,27 @@ public class Manual extends OpMode {
 
         else if (gamepad1.right_bumper) { // manual close without auto
             if (clawOpen) {
+                claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
-                claw.setPosition(1);
             }
             else {
+                claw.setPosition(CLAW_OPEN);
                 clawOpen = true;
-                claw.setPosition(0.43);
             }
         }
 
         // -------------------------------------------------------------- ARM ADJUSTMENT
 
         // best used for lining up arm for the topmost cone
-        if (gamepad1.b) {
+        if (gamepad1.dpad_down) {
+            targetArmPosition = JUNCTION_OFF;
+        }
+
+        else if (gamepad1.b && armM.getCurrentPosition() < 4000 - ARM_ADJUSTMENT_INCREMENT) {
             targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
         }
 
-        else if (gamepad1.a) {
+        else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
             targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
         }
 
@@ -224,14 +232,14 @@ public class Manual extends OpMode {
         // -------------------------------------------------------------- DRIVE
 
         // assign speed modifier
-        int driveSpeedModifier = 2;
+        int driveSpeedModifier = 1;
 
-        if (gamepad1.right_bumper) {
+        /*if (gamepad1.right_bumper) {
             driveSpeedModifier = 1;
         }
         if (gamepad1.left_bumper) {
             driveSpeedModifier = 3;
-        }
+        }*/
 
         // Mecanum Drive
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
@@ -262,5 +270,6 @@ public class Manual extends OpMode {
         telemetry.addData("Claw Open: ", clawOpen);
         telemetry.addData("Current Position: ", currentArmPosition);
         telemetry.addData("Target Arm Position: ", targetArmPosition);
+        telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
     }
 }
