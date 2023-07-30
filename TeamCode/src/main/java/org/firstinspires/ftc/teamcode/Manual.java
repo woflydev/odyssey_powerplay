@@ -83,14 +83,14 @@ public class Manual extends OpMode {
         if (right) {
             frontLM.setPower(power);
             frontRM.setPower(-power);
-            backLM.setPower(-power);
-            backRM.setPower(power);
+            backLM.setPower(power);
+            backRM.setPower(-power);
         }
         else {
             frontLM.setPower(-power);
             frontRM.setPower(power);
-            backLM.setPower(power);
-            backRM.setPower(-power);
+            backLM.setPower(-power);
+            backRM.setPower(power);
         }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
