@@ -18,7 +18,6 @@ public class Manual extends OpMode {
     private DcMotor frontRM = null;
     private DcMotorEx armM = null;
     private Servo claw;
-    private boolean clawOpen = false;
 
     private int currentArmPosition = 0;
     private int targetArmPosition = 0;
@@ -29,8 +28,9 @@ public class Manual extends OpMode {
     private double current_v4 = 0;
 
     private boolean ADJUSTMENT_ALLOWED = true;
+    private boolean clawOpen = true;
 
-    private static final float MAX_ACCELERATION_DEVIATION = 0.1f;
+    private static final float MAX_ACCELERATION_DEVIATION = 0.1f; // higher it is, the less smoothing
 
     // -------------------------------------------------------------- MOTOR CONFIG
 
@@ -47,8 +47,8 @@ public class Manual extends OpMode {
     // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
-    private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_LOW = 1650;
+    private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_HIGH = 3800;
 
@@ -108,7 +108,8 @@ public class Manual extends OpMode {
 
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
-        claw.setPosition(CLAW_CLOSE);
+        clawOpen = true;
+        claw.setPosition(CLAW_OPEN);
 
         backLM = hardwareMap.get(DcMotor.class, BACK_LEFT);
         backRM = hardwareMap.get(DcMotor.class, BACK_RIGHT);
@@ -185,61 +186,12 @@ public class Manual extends OpMode {
             targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
         }
 
-        if (ADJUSTMENT_ALLOWED) { armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); } // joystick position or key
-
-        // -------------------------------------------------------------- OLD MANUAL CODE
-
-        /*if (targetArmPosition < 4000) {
-            targetArmPosition += 8 * Math.round(-gamepad2.left_stick_y); // adds value of joystick
-        }
-
-        if (gamepad2.left_bumper) {
-            // claw close
-            clawOpen = false;
-            claw.setPosition(1);
-        } else if (gamepad2.right_bumper) {
-            // claw open
-            clawOpen = true;
-            claw.setPosition(0.43);
-        }
-
-        int armSpeedModifier = 1;
-        if (gamepad2.x) {
-            armSpeedModifier = 2;
-        }
-
-        currentArmPosition = armM.getCurrentPosition();
-
-        armM.setVelocity((double)1800 / armSpeedModifier);
-
-        if (gamepad2.dpad_down) {
-            targetArmPosition = JUNCTION_OFF;
-            telemetry.addData("target pos", targetArmPosition);
-        } else if (gamepad2.dpad_left) {
-            targetArmPosition = JUNCTION_LOW;
-            telemetry.addData("target pos", targetArmPosition);
-        } else if (gamepad2.dpad_right) {
-            targetArmPosition = JUNCTION_MID;
-            telemetry.addData("target pos", targetArmPosition);
-        } else if (gamepad2.dpad_up) {
-            targetArmPosition = JUNCTION_HIGH;
-            telemetry.addData("target pos", targetArmPosition);
-        }
-
-        armM.setTargetPosition(targetArmPosition);
-        */
+        if (ADJUSTMENT_ALLOWED) { armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); }
 
         // -------------------------------------------------------------- DRIVE
 
         // assign speed modifier
         int driveSpeedModifier = 1;
-
-        /*if (gamepad1.right_bumper) {
-            driveSpeedModifier = 1;
-        }
-        if (gamepad1.left_bumper) {
-            driveSpeedModifier = 3;
-        }*/
 
         // Mecanum Drive
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
