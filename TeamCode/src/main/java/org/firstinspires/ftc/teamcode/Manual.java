@@ -176,18 +176,19 @@ public class Manual extends OpMode {
         // best used for lining up arm for the topmost cone
         if (gamepad1.dpad_down) {
             targetArmPosition = JUNCTION_OFF;
-            Move(0.5, 500, true);
         }
 
-        else if (gamepad1.b && armM.getCurrentPosition() < 4000 - ARM_ADJUSTMENT_INCREMENT) {
-            targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+        if (ADJUSTMENT_ALLOWED) {
+            if (gamepad1.b && armM.getCurrentPosition() < 4000 - ARM_ADJUSTMENT_INCREMENT) {
+                targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+            }
+
+            else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
+                targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
+            }
         }
 
-        else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
-            targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
-        }
-
-        if (ADJUSTMENT_ALLOWED) { armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); }
+        armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
 
         // -------------------------------------------------------------- DRIVE
 
