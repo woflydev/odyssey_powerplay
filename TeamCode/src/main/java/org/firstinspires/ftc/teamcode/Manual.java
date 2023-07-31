@@ -27,6 +27,7 @@ public class Manual extends OpMode {
     private double current_v4 = 0;
 
     private boolean ADJUSTMENT_ALLOWED = true;
+    private boolean macroControl = false;
     private boolean clawOpen = true;
 
     // -------------------------------------------------------------- ROBOT CONFIG
@@ -92,6 +93,7 @@ public class Manual extends OpMode {
 
     private void MotorMode(boolean auto) {
         if (auto) {
+            frontRM.setDirection(DcMotorSimple.Direction.FORWARD);
             backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -99,6 +101,7 @@ public class Manual extends OpMode {
         }
 
         else {
+            frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
             backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -236,9 +239,10 @@ public class Manual extends OpMode {
 
         // -------------------------------------------------------------- MACROS
 
-        if (gamepad1.left_bumper) {
-            /*if (clawOpen) { // obtain cone
-                MotorMode(true);
+        if (gamepad1.left_bumper && !macroControl) {
+            if (clawOpen) { // obtain cone
+                //MotorMode(true);
+                macroControl = true;
                 ADJUSTMENT_ALLOWED = false;
 
                 Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
@@ -255,32 +259,13 @@ public class Manual extends OpMode {
 
                 Move(0.9, 650, false); // TODO: tune this to clear cone stack
                 Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
-                MotorMode(false);
-            }*/
-
-            if (clawOpen) { // obtain cone
-                MotorMode(true);
-                ADJUSTMENT_ALLOWED = false;
-
-                Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
-
-                claw.setPosition(CLAW_CLOSE); // close claw
-                clawOpen = false;
-
-                Delay(300); // claw needs time to close
-
-                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
-
-                Delay(400);
-
-                Move(0.9, 1000, false);
-                Turn(0.95, 525, LEFT_STACK); // turns left
-                MotorMode(false);
+                //MotorMode(false);
+                macroControl = false;
             }
 
             else { // drop off cone
-                MotorMode(true);
+                //MotorMode(true);
+                macroControl = true;
                 claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
 
@@ -294,7 +279,8 @@ public class Manual extends OpMode {
                 Turn(0.95, 1050, false);
 
                 ADJUSTMENT_ALLOWED = true;
-                MotorMode(false);
+                macroControl = false;
+                //MotorMode(false);
             }
         }
 
@@ -343,7 +329,9 @@ public class Manual extends OpMode {
 
         // -------------------------------------------------------------- DRIVE
 
-        Mecanum();
+        if (!macroControl) { // only take manual when macro control
+            Mecanum();
+        }
 
         // -------------------------------------------------------------- TELEMETRY
 
@@ -351,6 +339,7 @@ public class Manual extends OpMode {
         telemetry.addData("Current Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
+        telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.update();
     }
 }
