@@ -44,19 +44,37 @@ public class Manual extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
 
+    private static final boolean LEFT_STACK = false; // if left, must turn right
+
     //private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
     //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
-    private static final double MAX_ACCELERATION_DEVIATION = 0.1; // higher = less smoothing
+    private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
     // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
     private static final int JUNCTION_LOW = 1650;
-    private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_MID = 2700;
-    private static final int JUNCTION_HIGH = 4000;
+    private static final int JUNCTION_STANDBY = 3200;
+    private static final int JUNCTION_HIGH = 4100;
 
     // -------------------------------------------------------------- MAIN INIT
+
+    private void MotorMode(boolean auto) {
+        if (auto) {
+            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
+            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
+        else {
+            backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        }
+    }
 
     private void Delay(double time) {
         try { sleep((long)time); } catch (Exception e) { System.out.println("interrupted"); }
@@ -146,34 +164,6 @@ public class Manual extends OpMode {
         backRM.setVelocity(0);*/
     }
 
-    private void MotorMode(boolean auto) {
-        if (auto) {
-            backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
-            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        }
-
-        else {
-            backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-
-            backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-            frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        }
-    }
-
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
         clawOpen = true;
@@ -217,32 +207,63 @@ public class Manual extends OpMode {
         // -------------------------------------------------------------- MACROS
 
         if (gamepad1.left_bumper) {
-            if (clawOpen) { // obtain cone
+            /*if (clawOpen) { // obtain cone
+                MotorMode(true);
                 ADJUSTMENT_ALLOWED = false;
 
-                Move(0.5, 150, true); // TODO: should be the length of the arm and front of robot
+                Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close claw
                 clawOpen = false;
 
+                Delay(300); // claw needs time to close
+
                 armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_HIGH);
+                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
 
                 Delay(400);
 
                 Move(0.9, 650, false); // TODO: tune this to clear cone stack
                 Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
+                MotorMode(false);
+            }*/
+            if (clawOpen) { // obtain cone
+                MotorMode(true);
+                ADJUSTMENT_ALLOWED = false;
+
+                Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
+
+                claw.setPosition(CLAW_CLOSE); // close claw
+                clawOpen = false;
+
+                Delay(300); // claw needs time to close
+
+                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
+                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
+
+                Delay(400);
+
+                Move(0.9, 1000, false);
+                Turn(0.95, 525, LEFT_STACK); // turns left
+                MotorMode(false);
             }
+
             else { // drop off cone
+                MotorMode(true);
                 claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
+
+                Delay(350); // need time for cone to drop
 
                 Move(0.85, 150, false); // TODO: move back, tune timeout
 
                 armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_OFF);
+                armM.setTargetPosition(JUNCTION_STANDBY); targetArmPosition = JUNCTION_STANDBY;
+
+                Turn(0.95, 1050, false);
 
                 ADJUSTMENT_ALLOWED = true;
+                MotorMode(false);
             }
         }
 
@@ -264,12 +285,17 @@ public class Manual extends OpMode {
         // best used for lining up arm for the topmost cone
         if (gamepad1.dpad_down) {
             targetArmPosition = JUNCTION_OFF;
-            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
         }
 
         else if (gamepad1.dpad_up) {
             targetArmPosition = JUNCTION_HIGH;
-            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
+        }
+
+        if (gamepad1.dpad_right) {
+            MotorMode(true);
+            Move(0.5, 500, true);
+            Turn(0.5, 500, true);
+            MotorMode(false);
         }
 
         if (ADJUSTMENT_ALLOWED) {
@@ -280,16 +306,16 @@ public class Manual extends OpMode {
             else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
             }
-
-            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //1800
         }
+
+        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //velocity was 1800
 
         // -------------------------------------------------------------- DRIVE
 
         // assign speed modifier
         int driveSpeedModifier = 1;
 
-        // Mecanum Drive
+        // mecanum
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
         double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
         double rightX = gamepad1.left_stick_y;
