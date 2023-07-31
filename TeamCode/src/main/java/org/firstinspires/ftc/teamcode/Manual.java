@@ -27,7 +27,6 @@ public class Manual extends OpMode {
     private double current_v4 = 0;
 
     private boolean ADJUSTMENT_ALLOWED = true;
-    private boolean macroControl = false;
     private boolean clawOpen = true;
 
     // -------------------------------------------------------------- ROBOT CONFIG
@@ -239,10 +238,9 @@ public class Manual extends OpMode {
 
         // -------------------------------------------------------------- MACROS
 
-        if (gamepad1.left_bumper && !macroControl) {
+        if (gamepad1.left_bumper) {
             if (clawOpen) { // obtain cone
                 //MotorMode(true);
-                macroControl = true;
                 ADJUSTMENT_ALLOWED = false;
 
                 Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
@@ -259,13 +257,13 @@ public class Manual extends OpMode {
 
                 Move(0.9, 650, false); // TODO: tune this to clear cone stack
                 Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
+                ADJUSTMENT_ALLOWED = true;
                 //MotorMode(false);
-                macroControl = false;
             }
 
             else { // drop off cone
                 //MotorMode(true);
-                macroControl = true;
+                ADJUSTMENT_ALLOWED = false;
                 claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
 
@@ -279,7 +277,6 @@ public class Manual extends OpMode {
                 Turn(0.95, 1050, false);
 
                 ADJUSTMENT_ALLOWED = true;
-                macroControl = false;
                 //MotorMode(false);
             }
         }
@@ -311,7 +308,7 @@ public class Manual extends OpMode {
         if (gamepad1.dpad_right) {
             MotorMode(true);
             Move(0.5, 500, true);
-            Turn(0.5, 500, true);
+            Turn(0.5, 500, true); // might be a faulty encoder signal
             MotorMode(false);
         }
 
@@ -329,7 +326,7 @@ public class Manual extends OpMode {
 
         // -------------------------------------------------------------- DRIVE
 
-        if (!macroControl) { // only take manual when macro control
+        if (ADJUSTMENT_ALLOWED) { // only take manual when macro control
             Mecanum();
         }
 
