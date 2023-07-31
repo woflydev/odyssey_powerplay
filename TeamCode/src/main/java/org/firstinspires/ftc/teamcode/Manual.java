@@ -11,15 +11,14 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp()
 public class Manual extends OpMode {
-    // -------------------------------------------------------------- VAR CONFIG
-    private DcMotor backLM = null;
-    private DcMotor backRM = null;
-    private DcMotor frontLM = null;
-    private DcMotor frontRM = null;
+    // -------------------------------------------------------------- SYSTEM VAR
+    private DcMotorEx backLM = null;
+    private DcMotorEx backRM = null;
+    private DcMotorEx frontLM = null;
+    private DcMotorEx frontRM = null;
     private DcMotorEx armM = null;
     private Servo claw;
 
-    private int currentArmPosition = 0;
     private int targetArmPosition = 0;
 
     private double current_v1 = 0;
@@ -30,9 +29,9 @@ public class Manual extends OpMode {
     private boolean ADJUSTMENT_ALLOWED = true;
     private boolean clawOpen = true;
 
-    private static final float MAX_ACCELERATION_DEVIATION = 0.1f; // higher it is, the less smoothing
+    private double driveVelocity = 0;
 
-    // -------------------------------------------------------------- MOTOR CONFIG
+    // -------------------------------------------------------------- ROBOT CONFIG
 
     private static final String FRONT_LEFT = "frontL";
     private static final String FRONT_RIGHT = "frontR";
@@ -44,6 +43,13 @@ public class Manual extends OpMode {
     private static final double CLAW_CLOSE = 0.62;
     private static final double CLAW_OPEN = 0.43;
 
+    private static final int ARM_ADJUSTMENT_INCREMENT = 10;
+    private static final int ARM_BOOST_MODIFIER = 2;
+
+    private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
+    private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
+    private static final double MAX_ACCELERATION_DEVIATION = 0.1; // higher = less smoothing
+
     // -------------------------------------------------------------- JUNCTION PRESETS
 
     private static final int JUNCTION_OFF = 0;
@@ -51,9 +57,6 @@ public class Manual extends OpMode {
     private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_HIGH = 3800;
-
-    private static final int ARM_ADJUSTMENT_INCREMENT = 10;
-    private static final int ARM_BOOST_MODIFIER = 2;
 
     // -------------------------------------------------------------- MAIN INIT
 
@@ -64,58 +67,101 @@ public class Manual extends OpMode {
 
     private void Move(double power, int timeout, boolean forward) {
         if (forward) {
-            frontLM.setPower(-power);
+            /*frontLM.setPower(-power);
             frontRM.setPower(power);
             backLM.setPower(-power);
-            backRM.setPower(power);
+            backRM.setPower(power);*/
+
+            frontLM.setVelocity(-power);
+            frontRM.setVelocity(power);
+            backLM.setVelocity(-power);
+            backRM.setVelocity(power);
         }
         else {
-            frontLM.setPower(power);
+            /*frontLM.setPower(power);
             frontRM.setPower(-power);
             backLM.setPower(power);
-            backRM.setPower(-power);
+            backRM.setPower(-power);*/
+
+            frontLM.setVelocity(power);
+            frontRM.setVelocity(-power);
+            backLM.setVelocity(power);
+            backRM.setVelocity(-power);
         }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
 
-        frontLM.setPower(0);
+        /*frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
-        backRM.setPower(0);
+        backRM.setPower(0);*/
+
+        frontLM.setVelocity(0);
+        frontRM.setVelocity(0);
+        backLM.setVelocity(0);
+        backRM.setVelocity(0);
     }
 
     private void Turn(double power, int timeout, boolean right) {
         if (right) {
-            frontLM.setPower(-power); // left motors are inverted
+            /*frontLM.setPower(-power); // left motors are inverted
             frontRM.setPower(-power);
             backLM.setPower(-power);
-            backRM.setPower(-power);
+            backRM.setPower(-power);*/
+
+            frontLM.setVelocity(-power);
+            frontRM.setVelocity(-power);
+            backLM.setVelocity(-power);
+            backRM.setVelocity(-power);
         }
         else {
-            frontLM.setPower(power); // see above
+            /*frontLM.setPower(power); // see above
             frontRM.setPower(power);
             backLM.setPower(power);
-            backRM.setPower(power);
+            backRM.setPower(power);*/
+
+            frontLM.setVelocity(power);
+            frontRM.setVelocity(power);
+            backLM.setVelocity(power);
+            backRM.setVelocity(power);
         }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
 
-        frontLM.setPower(0);
+        /*frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
-        backRM.setPower(0);
+        backRM.setPower(0);*/
+
+        frontLM.setVelocity(0);
+        frontRM.setVelocity(0);
+        backLM.setVelocity(0);
+        backRM.setVelocity(0);
     }
 
     public void init() {
+        driveVelocity = ENCODER_TICKS * DRIVE_SPEED_MODIFIER;
+
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
         clawOpen = true;
         claw.setPosition(CLAW_OPEN);
 
-        backLM = hardwareMap.get(DcMotor.class, BACK_LEFT);
-        backRM = hardwareMap.get(DcMotor.class, BACK_RIGHT);
+        backLM = hardwareMap.get(DcMotorEx.class, BACK_LEFT);
+        backRM = hardwareMap.get(DcMotorEx.class, BACK_RIGHT);
 
-        frontLM = hardwareMap.get(DcMotor.class, FRONT_LEFT);
-        frontRM = hardwareMap.get(DcMotor.class, FRONT_RIGHT); frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontLM = hardwareMap.get(DcMotorEx.class, FRONT_LEFT);
+        frontRM = hardwareMap.get(DcMotorEx.class, FRONT_RIGHT); frontRM.setDirection(DcMotorSimple.Direction.REVERSE); // weird workaround Stanley put in
+
+        backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
+        backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
         armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -129,7 +175,6 @@ public class Manual extends OpMode {
     public void loop() {
         // -------------------------------------------------------------- PRELIMINARIES
         telemetry.clear();
-        currentArmPosition = armM.getCurrentPosition();
 
         // -------------------------------------------------------------- MACROS
 
@@ -222,7 +267,7 @@ public class Manual extends OpMode {
         // -------------------------------------------------------------- TELEMETRY
 
         telemetry.addData("Claw Open: ", clawOpen);
-        telemetry.addData("Current Position: ", currentArmPosition);
+        telemetry.addData("Current Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
     }
