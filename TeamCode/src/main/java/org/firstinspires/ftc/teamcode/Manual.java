@@ -41,8 +41,8 @@ public class Manual extends OpMode {
     private static final double CLAW_CLOSE = 0.62;
     private static final double CLAW_OPEN = 0.43;
 
-    private static final int ARM_ADJUSTMENT_INCREMENT = 10;
-    private static final int ARM_BOOST_MODIFIER = 2;
+    private static final int ARM_ADJUSTMENT_INCREMENT = 45;
+    private static final int ARM_BOOST_MODIFIER = 1;
 
     //private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
     //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
@@ -54,9 +54,13 @@ public class Manual extends OpMode {
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_STANDBY = 2000;
     private static final int JUNCTION_MID = 2700;
-    private static final int JUNCTION_HIGH = 3800;
+    private static final int JUNCTION_HIGH = 4000;
 
     // -------------------------------------------------------------- MAIN INIT
+
+    private void Delay(double time) {
+        try { sleep((long)time); } catch (Exception e) { System.out.println("interrupted"); }
+    }
 
     private double Stabilize(double new_accel, double current_accel) {
         double dev = new_accel - current_accel;
@@ -65,7 +69,7 @@ public class Manual extends OpMode {
 
     private void Move(double power, int timeout, boolean forward) {
         // going at .5 power will take twice as long, hence timeout / power = distance
-        timeout /= timeout > 0 ? timeout : 1;
+        timeout /= timeout > 0 ? power : 1;
 
         if (forward) {
             frontLM.setPower(-power);
@@ -104,7 +108,7 @@ public class Manual extends OpMode {
     }
 
     private void Turn(double power, int timeout, boolean right) {
-        timeout /= timeout > 0 ? timeout : 1;
+        timeout /= timeout > 0 ? power : 1;
 
         if (right) {
             frontLM.setPower(-power); // left motors are inverted
@@ -142,6 +146,34 @@ public class Manual extends OpMode {
         backRM.setVelocity(0);*/
     }
 
+    private void MotorMode(boolean auto) {
+        if (auto) {
+            backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
+            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
+        else {
+            backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+            backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        }
+    }
+
     public void init() {
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
         clawOpen = true;
@@ -158,11 +190,11 @@ public class Manual extends OpMode {
         frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
-        backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -188,16 +220,18 @@ public class Manual extends OpMode {
             if (clawOpen) { // obtain cone
                 ADJUSTMENT_ALLOWED = false;
 
-                Move(0.9, 250, true); // TODO: should be the length of the arm and front of robot
+                Move(0.5, 150, true); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close claw
                 clawOpen = false;
-                armM.setTargetPosition(JUNCTION_LOW); // lift cone clear of stack
 
-                Move(0.75, 300, false); // TODO: tune this to clear cone stack
-                Turn(0.95, 800, true); // TODO: 180 turn, timeout needs tweaking
+                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
+                armM.setTargetPosition(JUNCTION_HIGH);
 
-                armM.setTargetPosition(JUNCTION_STANDBY);
+                Delay(400);
+
+                Move(0.9, 650, false); // TODO: tune this to clear cone stack
+                Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
             }
             else { // drop off cone
                 claw.setPosition(CLAW_OPEN); // open claw
@@ -205,6 +239,7 @@ public class Manual extends OpMode {
 
                 Move(0.85, 150, false); // TODO: move back, tune timeout
 
+                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
                 armM.setTargetPosition(JUNCTION_OFF);
 
                 ADJUSTMENT_ALLOWED = true;
@@ -215,10 +250,12 @@ public class Manual extends OpMode {
             if (clawOpen) {
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
+                Delay(200); // needs delay to register button press
             }
             else {
                 claw.setPosition(CLAW_OPEN);
                 clawOpen = true;
+                Delay(200);
             }
         }
 
@@ -227,6 +264,12 @@ public class Manual extends OpMode {
         // best used for lining up arm for the topmost cone
         if (gamepad1.dpad_down) {
             targetArmPosition = JUNCTION_OFF;
+            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
+        }
+
+        else if (gamepad1.dpad_up) {
+            targetArmPosition = JUNCTION_HIGH;
+            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
         }
 
         if (ADJUSTMENT_ALLOWED) {
@@ -237,9 +280,9 @@ public class Manual extends OpMode {
             else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
             }
-        }
 
-        armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition);
+            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //1800
+        }
 
         // -------------------------------------------------------------- DRIVE
 
