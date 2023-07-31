@@ -39,7 +39,7 @@ public class Manual extends OpMode {
     private static final String SERVO_CLAW = "Servo";
     private static final String ARM_MOTOR = "armMotor";
 
-    private static final double CLAW_CLOSE = 0.62;
+    private static final double CLAW_CLOSE = 0.6;
     private static final double CLAW_OPEN = 0.43;
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
@@ -250,7 +250,7 @@ public class Manual extends OpMode {
                 claw.setPosition(CLAW_CLOSE); // close claw
                 clawOpen = false;
 
-                Delay(300); // claw needs time to close
+                Delay(150); // claw needs time to close
 
                 armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
                 armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
