@@ -41,6 +41,9 @@ public class Manual extends OpMode {
     private static final double CLAW_CLOSE = 0.6;
     private static final double CLAW_OPEN = 0.43;
 
+    private static final int MAX_ARM_HEIGHT = 4150;
+    private static final int MIN_ARM_HEIGHT = 0;
+
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
 
@@ -240,7 +243,7 @@ public class Manual extends OpMode {
 
         if (gamepad1.left_bumper) {
             if (clawOpen) { // obtain cone
-                //MotorMode(true);
+                MotorMode(true);
                 ADJUSTMENT_ALLOWED = false;
 
                 Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
@@ -258,11 +261,11 @@ public class Manual extends OpMode {
                 Move(0.9, 650, false); // TODO: tune this to clear cone stack
                 Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
                 ADJUSTMENT_ALLOWED = true;
-                //MotorMode(false);
+                MotorMode(false);
             }
 
             else { // drop off cone
-                //MotorMode(true);
+                MotorMode(true);
                 ADJUSTMENT_ALLOWED = false;
                 claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
@@ -277,7 +280,7 @@ public class Manual extends OpMode {
                 Turn(0.95, 1050, false);
 
                 ADJUSTMENT_ALLOWED = true;
-                //MotorMode(false);
+                MotorMode(false);
             }
         }
 
@@ -313,11 +316,11 @@ public class Manual extends OpMode {
         }
 
         if (ADJUSTMENT_ALLOWED) {
-            if (gamepad1.b && armM.getCurrentPosition() < 4000 - ARM_ADJUSTMENT_INCREMENT) {
+            if (gamepad1.b && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
             }
 
-            else if (gamepad1.a && armM.getCurrentPosition() > ARM_ADJUSTMENT_INCREMENT) {
+            else if (gamepad1.a && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
             }
         }
@@ -337,6 +340,9 @@ public class Manual extends OpMode {
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
         telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
+        telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
+        telemetry.addData("BackRM Encoder Value: ", backRM.getCurrentPosition());
+        telemetry.addData("BackLM Encoder Value: ", backLM.getCurrentPosition());
         telemetry.update();
     }
 }
