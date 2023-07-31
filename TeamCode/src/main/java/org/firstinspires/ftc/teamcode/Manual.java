@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
 @TeleOp()
@@ -95,7 +94,6 @@ public class Manual extends OpMode {
 
     private void MotorMode(boolean auto) {
         if (auto) {
-            frontRM.setDirection(DcMotorSimple.Direction.FORWARD);
             backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -103,7 +101,6 @@ public class Manual extends OpMode {
         }
 
         else {
-            frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
             backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -208,7 +205,7 @@ public class Manual extends OpMode {
         backRM = hardwareMap.get(DcMotorEx.class, BACK_RIGHT);
 
         frontLM = hardwareMap.get(DcMotorEx.class, FRONT_LEFT);
-        frontRM = hardwareMap.get(DcMotorEx.class, FRONT_RIGHT); frontRM.setDirection(DcMotorSimple.Direction.REVERSE); // weird workaround Stanley put in
+        frontRM = hardwareMap.get(DcMotorEx.class, FRONT_RIGHT); //frontRM.setDirection(DcMotorSimple.Direction.REVERSE); // weird workaround Stanley put in
 
         backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
