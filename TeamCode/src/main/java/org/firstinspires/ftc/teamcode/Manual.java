@@ -46,9 +46,10 @@ public class Manual extends OpMode {
 
     private static final boolean LEFT_STACK = false; // if left, must turn right
 
+    private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
+
     //private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
     //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
-    private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
     // -------------------------------------------------------------- JUNCTION PRESETS
 
