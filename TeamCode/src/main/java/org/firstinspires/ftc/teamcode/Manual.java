@@ -64,6 +64,9 @@ public class Manual extends OpMode {
     }
 
     private void Move(double power, int timeout, boolean forward) {
+        // going at .5 power will take twice as long, hence timeout / power = distance
+        timeout /= timeout > 0 ? timeout : 1;
+
         if (forward) {
             frontLM.setPower(-power);
             frontRM.setPower(power);
@@ -101,6 +104,8 @@ public class Manual extends OpMode {
     }
 
     private void Turn(double power, int timeout, boolean right) {
+        timeout /= timeout > 0 ? timeout : 1;
+
         if (right) {
             frontLM.setPower(-power); // left motors are inverted
             frontRM.setPower(-power);
