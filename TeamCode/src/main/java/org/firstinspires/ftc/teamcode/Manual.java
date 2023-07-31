@@ -276,5 +276,6 @@ public class Manual extends OpMode {
         telemetry.addData("Current Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
+        telemetry.update();
     }
 }
