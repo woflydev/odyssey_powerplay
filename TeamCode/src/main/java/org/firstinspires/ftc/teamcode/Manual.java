@@ -29,8 +29,6 @@ public class Manual extends OpMode {
     private boolean ADJUSTMENT_ALLOWED = true;
     private boolean clawOpen = true;
 
-    private double driveVelocity = 0;
-
     // -------------------------------------------------------------- ROBOT CONFIG
 
     private static final String FRONT_LEFT = "frontL";
@@ -46,8 +44,8 @@ public class Manual extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 10;
     private static final int ARM_BOOST_MODIFIER = 2;
 
-    private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
-    private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
+    //private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
+    //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
     private static final double MAX_ACCELERATION_DEVIATION = 0.1; // higher = less smoothing
 
     // -------------------------------------------------------------- JUNCTION PRESETS
@@ -67,81 +65,79 @@ public class Manual extends OpMode {
 
     private void Move(double power, int timeout, boolean forward) {
         if (forward) {
-            /*frontLM.setPower(-power);
+            frontLM.setPower(-power);
             frontRM.setPower(power);
             backLM.setPower(-power);
-            backRM.setPower(power);*/
+            backRM.setPower(power);
 
-            frontLM.setVelocity(-power);
+            /*frontLM.setVelocity(-power);
             frontRM.setVelocity(power);
             backLM.setVelocity(-power);
-            backRM.setVelocity(power);
+            backRM.setVelocity(power);*/
         }
         else {
-            /*frontLM.setPower(power);
+            frontLM.setPower(power);
             frontRM.setPower(-power);
             backLM.setPower(power);
-            backRM.setPower(-power);*/
+            backRM.setPower(-power);
 
-            frontLM.setVelocity(power);
+            /*frontLM.setVelocity(power);
             frontRM.setVelocity(-power);
             backLM.setVelocity(power);
-            backRM.setVelocity(-power);
+            backRM.setVelocity(-power);*/
         }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
 
-        /*frontLM.setPower(0);
+        frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
-        backRM.setPower(0);*/
+        backRM.setPower(0);
 
-        frontLM.setVelocity(0);
+        /*frontLM.setVelocity(0);
         frontRM.setVelocity(0);
         backLM.setVelocity(0);
-        backRM.setVelocity(0);
+        backRM.setVelocity(0);*/
     }
 
     private void Turn(double power, int timeout, boolean right) {
         if (right) {
-            /*frontLM.setPower(-power); // left motors are inverted
+            frontLM.setPower(-power); // left motors are inverted
             frontRM.setPower(-power);
             backLM.setPower(-power);
-            backRM.setPower(-power);*/
+            backRM.setPower(-power);
 
-            frontLM.setVelocity(-power);
+            /*frontLM.setVelocity(-power);
             frontRM.setVelocity(-power);
             backLM.setVelocity(-power);
-            backRM.setVelocity(-power);
+            backRM.setVelocity(-power);*/
         }
         else {
-            /*frontLM.setPower(power); // see above
+            frontLM.setPower(power); // see above
             frontRM.setPower(power);
             backLM.setPower(power);
-            backRM.setPower(power);*/
+            backRM.setPower(power);
 
-            frontLM.setVelocity(power);
+            /*frontLM.setVelocity(power);
             frontRM.setVelocity(power);
             backLM.setVelocity(power);
-            backRM.setVelocity(power);
+            backRM.setVelocity(power);*/
         }
 
         try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
 
-        /*frontLM.setPower(0);
+        frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
-        backRM.setPower(0);*/
+        backRM.setPower(0);
 
-        frontLM.setVelocity(0);
+        /*frontLM.setVelocity(0);
         frontRM.setVelocity(0);
         backLM.setVelocity(0);
-        backRM.setVelocity(0);
+        backRM.setVelocity(0);*/
     }
 
     public void init() {
-        driveVelocity = ENCODER_TICKS * DRIVE_SPEED_MODIFIER;
-
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
         clawOpen = true;
         claw.setPosition(CLAW_OPEN);
@@ -151,6 +147,11 @@ public class Manual extends OpMode {
 
         frontLM = hardwareMap.get(DcMotorEx.class, FRONT_LEFT);
         frontRM = hardwareMap.get(DcMotorEx.class, FRONT_RIGHT); frontRM.setDirection(DcMotorSimple.Direction.REVERSE); // weird workaround Stanley put in
+
+        backLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontLM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
         backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
         backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
