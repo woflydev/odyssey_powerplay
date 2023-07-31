@@ -60,6 +60,35 @@ public class Manual extends OpMode {
 
     // -------------------------------------------------------------- MAIN INIT
 
+    private void Mecanum() {
+        // assign speed modifier
+        int driveSpeedModifier = 1;
+
+        // mecanum
+        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
+        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
+        double rightX = gamepad1.left_stick_y;
+        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
+        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
+        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
+        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
+
+        double stable_v1 = Stabilize(v1, current_v1);
+        double stable_v2 = Stabilize(v2, current_v2);
+        double stable_v3 = Stabilize(v3, current_v3);
+        double stable_v4 = Stabilize(v4, current_v4);
+
+        current_v1 = stable_v1;
+        current_v2 = stable_v2;
+        current_v3 = stable_v3;
+        current_v4 = stable_v4;
+
+        frontLM.setPower(stable_v3 / driveSpeedModifier);
+        frontRM.setPower(stable_v2 / driveSpeedModifier);
+        backLM.setPower(stable_v1 / driveSpeedModifier);
+        backRM.setPower(stable_v4 / driveSpeedModifier);
+    }
+
     private void MotorMode(boolean auto) {
         if (auto) {
             backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
@@ -227,6 +256,7 @@ public class Manual extends OpMode {
                 Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
                 MotorMode(false);
             }*/
+
             if (clawOpen) { // obtain cone
                 MotorMode(true);
                 ADJUSTMENT_ALLOWED = false;
@@ -312,32 +342,7 @@ public class Manual extends OpMode {
 
         // -------------------------------------------------------------- DRIVE
 
-        // assign speed modifier
-        int driveSpeedModifier = 1;
-
-        // mecanum
-        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
-        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
-        double rightX = gamepad1.left_stick_y;
-        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
-        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
-        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
-        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
-
-        double stable_v1 = Stabilize(v1, current_v1);
-        double stable_v2 = Stabilize(v2, current_v2);
-        double stable_v3 = Stabilize(v3, current_v3);
-        double stable_v4 = Stabilize(v4, current_v4);
-
-        current_v1 = stable_v1;
-        current_v2 = stable_v2;
-        current_v3 = stable_v3;
-        current_v4 = stable_v4;
-
-        frontLM.setPower(stable_v3 / driveSpeedModifier);
-        frontRM.setPower(stable_v2 / driveSpeedModifier);
-        backLM.setPower(stable_v1 / driveSpeedModifier);
-        backRM.setPower(stable_v4 / driveSpeedModifier);
+        Mecanum();
 
         // -------------------------------------------------------------- TELEMETRY
 
