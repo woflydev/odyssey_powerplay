@@ -7,9 +7,10 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp()
-public class Manual extends OpMode {
+public class Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
@@ -17,6 +18,8 @@ public class Manual extends OpMode {
     private DcMotorEx frontRM = null;
     private DcMotorEx armM = null;
     private Servo claw;
+
+    private ElapsedTime encoderRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
 
@@ -50,7 +53,7 @@ public class Manual extends OpMode {
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
-    //private static final double ENCODER_TICKS = 537.7; // gobuilda motor 85203 Series
+    private static final double PPR = 537.7; // gobuilda motor 85203 Series
     //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
 
     // -------------------------------------------------------------- JUNCTION PRESETS
@@ -118,85 +121,76 @@ public class Manual extends OpMode {
     }
 
     private void Move(double power, int timeout, boolean forward) {
-        // going at .5 power will take twice as long, hence timeout / power = distance
-        timeout /= timeout > 0 ? power : 1;
+        int dir = forward ? 1 : -1;
+        timeout /= timeout > 0 ? power : 1; // .5 power will take twice as long, hence timeout / power = distance
 
-        if (forward) {
-            frontLM.setPower(-power);
-            frontRM.setPower(power);
-            backLM.setPower(-power);
-            backRM.setPower(power);
+        frontLM.setPower(-power * dir);
+        frontRM.setPower(power * dir);
+        backLM.setPower(-power * dir);
+        backRM.setPower(power * dir);
 
-            /*frontLM.setVelocity(-power);
-            frontRM.setVelocity(power);
-            backLM.setVelocity(-power);
-            backRM.setVelocity(power);*/
-        }
-        else {
-            frontLM.setPower(power);
-            frontRM.setPower(-power);
-            backLM.setPower(power);
-            backRM.setPower(-power);
-
-            /*frontLM.setVelocity(power);
-            frontRM.setVelocity(-power);
-            backLM.setVelocity(power);
-            backRM.setVelocity(-power);*/
-        }
-
-        try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
+        Delay(timeout);
 
         frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
         backRM.setPower(0);
-
-        /*frontLM.setVelocity(0);
-        frontRM.setVelocity(0);
-        backLM.setVelocity(0);
-        backRM.setVelocity(0);*/
     }
 
     private void Turn(double power, int timeout, boolean right) {
+        int dir = right ? 1 : -1;
         timeout /= timeout > 0 ? power : 1;
 
-        if (right) {
-            frontLM.setPower(-power); // left motors are inverted
-            frontRM.setPower(-power);
-            backLM.setPower(-power);
-            backRM.setPower(-power);
+        frontLM.setPower(-power * dir);
+        frontRM.setPower(-power * dir);
+        backLM.setPower(-power * dir);
+        backRM.setPower(-power * dir);
 
-            /*frontLM.setVelocity(-power);
-            frontRM.setVelocity(-power);
-            backLM.setVelocity(-power);
-            backRM.setVelocity(-power);*/
-        }
-        else {
-            frontLM.setPower(power); // see above
-            frontRM.setPower(power);
-            backLM.setPower(power);
-            backRM.setPower(power);
-
-            /*frontLM.setVelocity(power);
-            frontRM.setVelocity(power);
-            backLM.setVelocity(power);
-            backRM.setVelocity(power);*/
-        }
-
-        try { sleep(timeout); } catch (Exception e) { System.out.println("interrupted"); }
+        Delay(timeout);
 
         frontLM.setPower(0);
         frontRM.setPower(0);
         backLM.setPower(0);
         backRM.setPower(0);
+    }
 
-        /*frontLM.setVelocity(0);
-        frontRM.setVelocity(0);
-        backLM.setVelocity(0);
-        backRM.setVelocity(0);*/
+    private void MoveEncoder(double power, double left, double right, double safetyTimeout) {
+        int newLeftTarget = backLM.getCurrentPosition() + (int)(left * PPR);
+        int newRightTarget = backRM.getCurrentPosition() + (int)(right * PPR);
+
+        backLM.setTargetPosition(newLeftTarget);
+        frontLM.setTargetPosition(newLeftTarget);
+        backRM.setTargetPosition(newRightTarget);
+        frontRM.setTargetPosition(newRightTarget);
+
+        backLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        encoderRuntime.reset();
+        backLM.setPower(Math.abs(power));
+        frontLM.setPower(Math.abs(power));
+        backRM.setPower(Math.abs(power));
+        frontRM.setPower(Math.abs(power));
+
+        while ((encoderRuntime.seconds() < safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
+            telemetry.addData("TARGET COORDINATE: ",  "%7d :%7d", newLeftTarget,  newRightTarget);
+            telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
+            telemetry.update();
+        }
+
+        backLM.setPower(0);
+        frontLM.setPower(0);
+        backRM.setPower(0);
+        frontRM.setPower(0);
     }
 
     public void init() {
+        // Send telemetry message to signify robot waiting;
+        telemetry.addData("Status", "ROBOT INITIALIZING...");    //
+        telemetry.update();
+
         claw = hardwareMap.get(Servo.class, SERVO_CLAW);
         clawOpen = true;
         claw.setPosition(CLAW_OPEN);
