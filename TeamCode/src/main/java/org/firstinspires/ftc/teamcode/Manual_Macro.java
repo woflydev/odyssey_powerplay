@@ -131,6 +131,8 @@ public class Manual_Macro extends OpMode {
     }
 
     private void Macros() {
+        int direction = SCORING_BEHAVIOUR_LEFT ? -1 : 1;
+
         if (gamepad1.left_bumper) {
             if (clawOpen) { // obtain cone
                 MotorMode(true);
@@ -146,10 +148,11 @@ public class Manual_Macro extends OpMode {
                 armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
                 armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
 
-                Delay(400);
+                Delay(250);
 
                 EncoderMove(0.9, -1, -1, 5); // TODO: tune this to clear cone stack
-                Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
+                EncoderMove(0.8, 2 * direction, -2 * direction, 4);
+
                 ADJUSTMENT_ALLOWED = true;
                 MotorMode(false);
             }
@@ -160,14 +163,17 @@ public class Manual_Macro extends OpMode {
                 claw.setPosition(CLAW_OPEN); // open claw
                 clawOpen = true;
 
-                Delay(350); // need time for cone to drop
+                Delay(250); // need time for cone to drop
 
-                EncoderMove(0.85, 2, 2, 5); // TODO: move back, tune timeout
+                EncoderMove(0.85, -0.5, -0.5, 5); // move back for clearance TODO: move back, tune timeout
+
+                Delay(150);
 
                 armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_STANDBY); targetArmPosition = JUNCTION_STANDBY;
+                armM.setTargetPosition(JUNCTION_MID); targetArmPosition = JUNCTION_MID;
 
-                Turn(0.95, 1050, false);
+                EncoderMove(0.9, -2 * direction, 2 * direction, 4);
+                EncoderMove(0.9, 1, 1, 5);
 
                 ADJUSTMENT_ALLOWED = true;
                 MotorMode(false);
