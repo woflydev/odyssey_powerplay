@@ -19,7 +19,7 @@ public class Manual_Macro extends OpMode {
     private DcMotorEx armM = null;
     private Servo claw;
 
-    private ElapsedTime encoderRuntime = new ElapsedTime();
+    private final ElapsedTime encoderRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
 
@@ -30,6 +30,8 @@ public class Manual_Macro extends OpMode {
 
     private boolean ADJUSTMENT_ALLOWED = true;
     private boolean clawOpen = true;
+
+    private boolean SCORING_BEHAVIOUR_LEFT = true; // turns left on score macro
 
     // -------------------------------------------------------------- ROBOT CONFIG
 
@@ -49,8 +51,6 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
 
-    private static final boolean LEFT_STACK = false; // if left, must turn right
-
     private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
@@ -64,36 +64,131 @@ public class Manual_Macro extends OpMode {
     private static final int JUNCTION_STANDBY = 3200;
     private static final int JUNCTION_HIGH = 4100;
 
-    // -------------------------------------------------------------- MAIN INIT
+    // -------------------------------------------------------------- ROBOT OPERATION
 
     private void Mecanum() {
-        // assign speed modifier
-        int driveSpeedModifier = 1;
+        if (ADJUSTMENT_ALLOWED) { // only take manual when not macro control
+            // assign speed modifier
+            int driveSpeedModifier = 1;
 
-        // mecanum
-        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
-        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
-        double rightX = gamepad1.left_stick_y;
-        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
-        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
-        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
-        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
+            // mecanum
+            double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
+            double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
+            double rightX = gamepad1.left_stick_y;
+            final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
+            final double v2 = r * Math.sin(robotAngle) - rightX; //front right
+            final double v3 = r * Math.sin(robotAngle) + rightX; //front left
+            final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
 
-        double stable_v1 = Stabilize(v1, current_v1);
-        double stable_v2 = Stabilize(v2, current_v2);
-        double stable_v3 = Stabilize(v3, current_v3);
-        double stable_v4 = Stabilize(v4, current_v4);
+            double stable_v1 = Stabilize(v1, current_v1);
+            double stable_v2 = Stabilize(v2, current_v2);
+            double stable_v3 = Stabilize(v3, current_v3);
+            double stable_v4 = Stabilize(v4, current_v4);
 
-        current_v1 = stable_v1;
-        current_v2 = stable_v2;
-        current_v3 = stable_v3;
-        current_v4 = stable_v4;
+            current_v1 = stable_v1;
+            current_v2 = stable_v2;
+            current_v3 = stable_v3;
+            current_v4 = stable_v4;
 
-        frontLM.setPower(stable_v3 / driveSpeedModifier);
-        frontRM.setPower(stable_v2 / driveSpeedModifier);
-        backLM.setPower(stable_v1 / driveSpeedModifier);
-        backRM.setPower(stable_v4 / driveSpeedModifier);
+            frontLM.setPower(stable_v3 / driveSpeedModifier);
+            frontRM.setPower(stable_v2 / driveSpeedModifier);
+            backLM.setPower(stable_v1 / driveSpeedModifier);
+            backRM.setPower(stable_v4 / driveSpeedModifier);
+        }
     }
+
+    private void Overrides() {
+        // best used for lining up arm for the topmost cone
+        if (ADJUSTMENT_ALLOWED) {
+            if (gamepad1.b && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
+                targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+            }
+
+            else if (gamepad1.a && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
+                targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
+            }
+        }
+
+        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //velocity was 1800
+    }
+
+    private void RuntimeConfig() {
+        if (gamepad1.dpad_down) {
+            targetArmPosition = JUNCTION_OFF;
+        }
+
+        else if (gamepad1.dpad_up) {
+            targetArmPosition = JUNCTION_HIGH;
+        }
+
+        if (gamepad1.dpad_left) {
+            SCORING_BEHAVIOUR_LEFT = true;
+        }
+
+        else if (gamepad1.dpad_right) {
+            SCORING_BEHAVIOUR_LEFT = false;
+        }
+    }
+
+    private void Macros() {
+        if (gamepad1.left_bumper) {
+            if (clawOpen) { // obtain cone
+                MotorMode(true);
+                ADJUSTMENT_ALLOWED = false;
+
+                EncoderMove(0.5, 1, 1, 5); // TODO: should be the length of the arm and front of robot
+
+                claw.setPosition(CLAW_CLOSE); // close claw
+                clawOpen = false;
+
+                Delay(150); // claw needs time to close
+
+                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
+                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
+
+                Delay(400);
+
+                EncoderMove(0.9, -1, -1, 5); // TODO: tune this to clear cone stack
+                Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
+                ADJUSTMENT_ALLOWED = true;
+                MotorMode(false);
+            }
+
+            else { // drop off cone
+                MotorMode(true);
+                ADJUSTMENT_ALLOWED = false;
+                claw.setPosition(CLAW_OPEN); // open claw
+                clawOpen = true;
+
+                Delay(350); // need time for cone to drop
+
+                EncoderMove(0.85, 2, 2, 5); // TODO: move back, tune timeout
+
+                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
+                armM.setTargetPosition(JUNCTION_STANDBY); targetArmPosition = JUNCTION_STANDBY;
+
+                Turn(0.95, 1050, false);
+
+                ADJUSTMENT_ALLOWED = true;
+                MotorMode(false);
+            }
+        }
+
+        else if (gamepad1.right_bumper) { // manual close without auto
+            if (clawOpen) {
+                claw.setPosition(CLAW_CLOSE);
+                clawOpen = false;
+                Delay(200); // needs delay to register button press
+            }
+            else {
+                claw.setPosition(CLAW_OPEN);
+                clawOpen = true;
+                Delay(200);
+            }
+        }
+    }
+
+    // -------------------------------------------------------------- USER FUNCTIONS
 
     private void MotorMode(boolean auto) {
         if (auto) {
@@ -154,7 +249,7 @@ public class Manual_Macro extends OpMode {
         backRM.setPower(0);
     }
 
-    private void MoveEncoder(double power, double left, double right, double safetyTimeout) {
+    private void EncoderMove(double power, double left, double right, double safetyTimeout) {
         int newLeftTarget = backLM.getCurrentPosition() + (int)(left * PPR);
         int newRightTarget = backRM.getCurrentPosition() + (int)(right * PPR);
 
@@ -184,7 +279,14 @@ public class Manual_Macro extends OpMode {
         frontLM.setPower(0);
         backRM.setPower(0);
         frontRM.setPower(0);
+
+        backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
+
+    // -------------------------------------------------------------- MAIN INIT
 
     public void init() {
         // Send telemetry message to signify robot waiting;
@@ -223,105 +325,21 @@ public class Manual_Macro extends OpMode {
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         telemetry.setAutoClear(false);
+
+        telemetry.addData("Status", "INITIALIZATION COMPLETE!");
+        telemetry.update();
     }
 
     public void loop() {
         // -------------------------------------------------------------- PRELIMINARIES
         telemetry.clear();
 
-        // -------------------------------------------------------------- MACROS
+        // -------------------------------------------------------------- DRIVE AND MANUAL OVERRIDES
 
-        if (gamepad1.left_bumper) {
-            if (clawOpen) { // obtain cone
-                MotorMode(true);
-                ADJUSTMENT_ALLOWED = false;
-
-                Move(0.5, 180, true); // TODO: should be the length of the arm and front of robot
-
-                claw.setPosition(CLAW_CLOSE); // close claw
-                clawOpen = false;
-
-                Delay(150); // claw needs time to close
-
-                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
-
-                Delay(400);
-
-                Move(0.9, 650, false); // TODO: tune this to clear cone stack
-                Turn(0.95, 1050, true); // TODO: 180 turn, timeout needs tweaking
-                ADJUSTMENT_ALLOWED = true;
-                MotorMode(false);
-            }
-
-            else { // drop off cone
-                MotorMode(true);
-                ADJUSTMENT_ALLOWED = false;
-                claw.setPosition(CLAW_OPEN); // open claw
-                clawOpen = true;
-
-                Delay(350); // need time for cone to drop
-
-                Move(0.85, 150, false); // TODO: move back, tune timeout
-
-                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_STANDBY); targetArmPosition = JUNCTION_STANDBY;
-
-                Turn(0.95, 1050, false);
-
-                ADJUSTMENT_ALLOWED = true;
-                MotorMode(false);
-            }
-        }
-
-        else if (gamepad1.right_bumper) { // manual close without auto
-            if (clawOpen) {
-                claw.setPosition(CLAW_CLOSE);
-                clawOpen = false;
-                Delay(200); // needs delay to register button press
-            }
-            else {
-                claw.setPosition(CLAW_OPEN);
-                clawOpen = true;
-                Delay(200);
-            }
-        }
-
-        // -------------------------------------------------------------- ARM ADJUSTMENT
-
-        // best used for lining up arm for the topmost cone
-        if (gamepad1.dpad_down) {
-            targetArmPosition = JUNCTION_OFF;
-        }
-
-        else if (gamepad1.dpad_up) {
-            targetArmPosition = JUNCTION_HIGH;
-        }
-
-        if (gamepad1.dpad_right) {
-            MotorMode(true);
-            Move(0.5, 500, true);
-            Turn(0.5, 500, true); // might be a faulty encoder signal
-            MotorMode(false);
-        }
-
-        if (ADJUSTMENT_ALLOWED) {
-            if (gamepad1.b && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
-                targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
-            }
-
-            else if (gamepad1.a && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
-                targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
-            }
-        }
-
-        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //velocity was 1800
-
-        // -------------------------------------------------------------- DRIVE
-
-        if (ADJUSTMENT_ALLOWED) { // only take manual when macro control
-            Mecanum();
-        }
+        Macros();
+        Overrides();
+        RuntimeConfig();
+        Mecanum();
 
         // -------------------------------------------------------------- TELEMETRY
 
@@ -329,6 +347,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Current Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
+        telemetry.addData("Score Behaviour: ", SCORING_BEHAVIOUR_LEFT);
         telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
         telemetry.addData("BackRM Encoder Value: ", backRM.getCurrentPosition());
