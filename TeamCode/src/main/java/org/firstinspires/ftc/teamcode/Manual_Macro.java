@@ -113,11 +113,11 @@ public class Manual_Macro extends OpMode {
             }
         }
 
-        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+        armM.setTargetPosition(targetArmPosition);
 
         if (targetArmPosition == JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) {
             armRuntime.reset();
-            armM.setTargetPosition(targetArmPosition);
+            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
             while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.addLine("ARM RESET DETECTED!");
                 telemetry.update();
@@ -125,10 +125,11 @@ public class Manual_Macro extends OpMode {
             armM.setVelocity(0);
             runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
+            telemetry.update();
         }
 
         else {
-            armM.setTargetPosition(targetArmPosition); // this line actually drives arm motor
+            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
         }
     }
 
