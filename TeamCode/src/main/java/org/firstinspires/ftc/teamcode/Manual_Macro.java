@@ -371,7 +371,7 @@ public class Manual_Macro extends OpMode {
         // -------------------------------------------------------------- TELEMETRY
 
         telemetry.addData("Claw Open: ", clawOpen);
-        telemetry.addData("Current Position: ", armM.getCurrentPosition());
+        telemetry.addData("Current Arm Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
         telemetry.addData("Score Behaviour: ", SCORING_BEHAVIOUR_LEFT);
