@@ -115,7 +115,7 @@ public class Manual_Macro extends OpMode {
 
         armM.setTargetPosition(targetArmPosition);
 
-        if (targetArmPosition == JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) {
+        if (targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) {
             armRuntime.reset();
             armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
             while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
