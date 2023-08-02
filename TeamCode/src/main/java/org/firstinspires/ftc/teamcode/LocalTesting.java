@@ -2,17 +2,15 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 // TODO: test encoderMove function for forward/backward + imu calibration (which axes?)
 
@@ -23,9 +21,7 @@ public class LocalTesting extends OpMode {
     private DcMotorEx backRM = null;
     private DcMotorEx frontLM = null;
     private DcMotorEx frontRM = null;
-    private BNO055IMU imu = null;
-
-    private double globalAngle = 0.30;
+    private IMU imu = null;
 
     private double current_v1 = 0;
     private double current_v2 = 0;
@@ -33,7 +29,6 @@ public class LocalTesting extends OpMode {
     private double current_v4 = 0;
 
     private final ElapsedTime encoderRuntime = new ElapsedTime();
-    private Orientation lastAngles = new Orientation();
 
     // -------------------------------------------------------------- ROBOT CONFIG
 
@@ -49,23 +44,44 @@ public class LocalTesting extends OpMode {
     // -------------------------------------------------------------- ROBOT OPERATION
 
     private void Mecanum() {
-        // assign speed modifier
+        double y = -gamepad1.left_stick_y;
+        double x = gamepad1.left_stick_x * 1.1;
+        double rx = gamepad1.right_stick_x;
+
+        if (gamepad1.options) {
+            imu.resetYaw();
+        }
+
+        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+        // Rotate the movement direction counter to the bot's rotation
+        double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
+        double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
+
+        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
+        double frontLeftPower = (rotY + rotX + rx) / denominator;
+        double backLeftPower = (rotY - rotX + rx) / denominator;
+        double frontRightPower = (rotY - rotX - rx) / denominator;
+        double backRightPower = (rotY + rotX - rx) / denominator;
+
+        /*// assign speed modifier
         int driveSpeedModifier = 1;
 
         // mecanum
         double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
         double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
-        robotAngle -= GetRobotAngle(); // in testing
         double rightX = gamepad1.left_stick_y;
         final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
         final double v2 = r * Math.sin(robotAngle) - rightX; //front right
         final double v3 = r * Math.sin(robotAngle) + rightX; //front left
-        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
+        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right*/
 
-        double stable_v1 = Stabilize(v1, current_v1);
-        double stable_v2 = Stabilize(v2, current_v2);
-        double stable_v3 = Stabilize(v3, current_v3);
-        double stable_v4 = Stabilize(v4, current_v4);
+        int driveSpeedModifier = 1;
+
+        double stable_v1 = Stabilize(backLeftPower, current_v1);
+        double stable_v2 = Stabilize(frontRightPower, current_v2);
+        double stable_v3 = Stabilize(frontLeftPower, current_v3);
+        double stable_v4 = Stabilize(backRightPower, current_v4);
 
         current_v1 = stable_v1;
         current_v2 = stable_v2;
@@ -76,22 +92,6 @@ public class LocalTesting extends OpMode {
         frontRM.setPower(stable_v2 / driveSpeedModifier);
         backLM.setPower(stable_v1 / driveSpeedModifier);
         backRM.setPower(stable_v4 / driveSpeedModifier);
-    }
-
-    private double GetRobotAngle() {
-        Orientation angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-        double deltaAngle = angles.firstAngle - lastAngles.firstAngle;
-
-        if (deltaAngle < -180)
-            deltaAngle += 360;
-        else if (deltaAngle > 180)
-            deltaAngle -= 360;
-
-        globalAngle += deltaAngle;
-        lastAngles = angles;
-
-        return globalAngle;
     }
 
     // -------------------------------------------------------------- USER FUNCTIONS
@@ -173,13 +173,12 @@ public class LocalTesting extends OpMode {
 
         // -------------------------------------------------------------- IMU INIT
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.mode                 = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit            = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit            = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled       = false;
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT
+        ));
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu = hardwareMap.get(IMU.class, "imu");
         imu.initialize(parameters);
 
         telemetry.addData("Status", "CALIBRATING IMU...");
@@ -187,7 +186,6 @@ public class LocalTesting extends OpMode {
 
         Delay(500);
 
-        telemetry.addData("IMU Calibration Status", imu.getCalibrationStatus().toString());
         telemetry.update();
 
         Delay(2000);
@@ -212,6 +210,7 @@ public class LocalTesting extends OpMode {
             EncoderMove(0.5, 3, 3, 3);
             EncoderMove(0.5, -3, -3, 3);
             EncoderMove(0.5, 3, -3, 3);
+            Delay(500);
         }
 
         // -------------------------------------------------------------- TELEMETRY

@@ -268,7 +268,7 @@ public class Manual_Macro extends OpMode {
     }
 
     private void UpdateArm() { // after updating target pos, must run this to make arm move
-        armM.setTargetPosition(targetArmPosition);
+        armM.setTargetPosition(targetArmPosition + 100);
 
         if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
             armCanReset = false;
