@@ -20,6 +20,7 @@ public class Manual_Macro extends OpMode {
     private Servo claw;
 
     private final ElapsedTime encoderRuntime = new ElapsedTime();
+    private final ElapsedTime armRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
 
@@ -27,6 +28,8 @@ public class Manual_Macro extends OpMode {
     private double current_v2 = 0;
     private double current_v3 = 0;
     private double current_v4 = 0;
+
+    private int runtimeArmMinimum = 0;
 
     private boolean ADJUSTMENT_ALLOWED = true;
     private boolean clawOpen = true;
@@ -50,6 +53,7 @@ public class Manual_Macro extends OpMode {
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
+    private static final int ARM_RESET_TIMEOUT = 3;
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
@@ -109,7 +113,23 @@ public class Manual_Macro extends OpMode {
             }
         }
 
-        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); armM.setTargetPosition(targetArmPosition); //velocity was 1800
+        armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+
+        if (targetArmPosition == JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) {
+            armRuntime.reset();
+            armM.setTargetPosition(targetArmPosition);
+            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                telemetry.addLine("ARM RESET DETECTED!");
+                telemetry.update();
+            }
+            armM.setVelocity(0);
+            runtimeArmMinimum = armM.getCurrentPosition();
+            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
+        }
+
+        else {
+            armM.setTargetPosition(targetArmPosition); // this line actually drives arm motor
+        }
     }
 
     private void RuntimeConfig() {
@@ -275,7 +295,7 @@ public class Manual_Macro extends OpMode {
         backRM.setPower(Math.abs(power));
         frontRM.setPower(Math.abs(power));
 
-        while ((encoderRuntime.seconds() < safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
+        while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
             telemetry.addData("TARGET COORDINATE: ",  "%7d :%7d", newLeftTarget,  newRightTarget);
             telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
             telemetry.update();
