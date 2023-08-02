@@ -57,7 +57,7 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
     private static final int ARM_RESET_TIMEOUT = 3;
-    private static final int ARM_RESET_THRESHOLD = 200; // will only reset if the arm has previously gone above this threshold
+    private static final int ARM_RESET_THRESHOLD = 800; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
 
@@ -159,8 +159,8 @@ public class Manual_Macro extends OpMode {
 
                 Delay(250);
 
-                EncoderMove(0.9, -1, -1, 5); // TODO: tune this to clear cone stack
-                EncoderMove(0.8, 2 * direction, -2 * direction, 4);
+                EncoderMove(0.5, -8, -8, 5); // TODO: tune this to clear cone stack
+                EncoderMove(0.5, 2 * direction, -2 * direction, 4);
 
                 ADJUSTMENT_ALLOWED = true;
                 MotorMode(false);
@@ -273,12 +273,13 @@ public class Manual_Macro extends OpMode {
         if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
             armCanReset = false;
             armRuntime.reset();
-            armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+
             while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-                telemetry.addData("ARM RESET DETECTED! ", armM.getCurrentPosition());
                 telemetry.update();
             }
-            armM.setVelocity(0);
+
+            //armM.setVelocity(0);
             runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
@@ -286,13 +287,7 @@ public class Manual_Macro extends OpMode {
 
         else {
             armRuntime.reset();
-            armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
-            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-                telemetry.addData("ARM MOVING!", armM.getCurrentPosition());
-                telemetry.update();
-            }
-
-            armM.setVelocity(0);
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
 
             if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
                 armCanReset = true;
