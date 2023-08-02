@@ -106,12 +106,12 @@ public class LocalTesting extends OpMode {
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
+        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
         int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
         int backRMTarget = backRM.getCurrentPosition() + (int)(right * PPR);
         int frontRMTarget = frontRM.getCurrentPosition() + (int)(right * PPR);
 
-        backLM.setTargetPosition(backLMTarget); // used to be pos
+        backLM.setTargetPosition(backLMTarget);
         frontLM.setTargetPosition(frontLMTarget);
         backRM.setTargetPosition(backRMTarget);
         frontRM.setTargetPosition(frontRMTarget);
