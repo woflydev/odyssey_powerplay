@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -44,11 +45,12 @@ public class LocalTesting extends OpMode {
     // -------------------------------------------------------------- ROBOT OPERATION
 
     private void Mecanum() {
-        double y = -gamepad1.left_stick_y;
-        double x = gamepad1.left_stick_x * 1.1;
-        double rx = gamepad1.right_stick_x;
+        // all negative for some reason
+        double y = gamepad1.left_stick_y;
+        double x = -gamepad1.left_stick_x * 1.1;
+        double rx = -gamepad1.right_stick_x;
 
-        if (gamepad1.options) {
+        if (gamepad1.back) {
             imu.resetYaw();
         }
 
@@ -170,6 +172,9 @@ public class LocalTesting extends OpMode {
         backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+
+        frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRM.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // -------------------------------------------------------------- IMU INIT
 

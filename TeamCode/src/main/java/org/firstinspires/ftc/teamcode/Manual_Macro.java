@@ -2,13 +2,17 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 @TeleOp()
 public class Manual_Macro extends OpMode {
@@ -18,24 +22,25 @@ public class Manual_Macro extends OpMode {
     private DcMotorEx frontLM = null;
     private DcMotorEx frontRM = null;
     private DcMotorEx armM = null;
-    private BNO055IMU imu = null;
+    private IMU imu = null;
     private Servo claw;
 
     private final ElapsedTime encoderRuntime = new ElapsedTime();
     private final ElapsedTime armRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
+    private int runtimeArmMinimum = 0;
+    private boolean armCanReset = false;
+    private boolean clawOpen = true;
+
+    private boolean fieldCentricRed = true;
 
     private double current_v1 = 0;
     private double current_v2 = 0;
     private double current_v3 = 0;
     private double current_v4 = 0;
 
-    private int runtimeArmMinimum = 0;
-    private boolean armCanReset = false;
-
     private boolean ADJUSTMENT_ALLOWED = true;
-    private boolean clawOpen = true;
 
     private boolean SCORING_BEHAVIOUR_LEFT = true; // turns left on score macro
 
@@ -47,6 +52,7 @@ public class Manual_Macro extends OpMode {
     private static final String BACK_RIGHT = "backR";
     private static final String SERVO_CLAW = "Servo";
     private static final String ARM_MOTOR = "armMotor";
+    private static final String HUB_IMU = "imu";
 
     private static final double CLAW_CLOSE = 0.6;
     private static final double CLAW_OPEN = 0.43;
@@ -75,7 +81,52 @@ public class Manual_Macro extends OpMode {
 
     private void Mecanum() {
         if (ADJUSTMENT_ALLOWED) { // only take manual when not macro control
-            // assign speed modifier
+            // IF GETTING RID OF MECANUM, GET RID OF REVERSE DIRECTION
+            double yAxis;
+            double xAxis;
+            double rotateAxis;
+
+            int dir = fieldCentricRed ? 1 : -1;
+
+            // all negative when field centric red
+            yAxis = gamepad1.left_stick_y * dir;
+            xAxis = -gamepad1.left_stick_x * 1.1 * dir;
+            rotateAxis = -gamepad1.right_stick_x * dir;
+
+            if (gamepad1.back) {
+                imu.resetYaw();
+            }
+
+            double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+            // Rotate the movement direction counter to the bot's rotation
+            double rotX = xAxis * Math.cos(-botHeading) - yAxis * Math.sin(-botHeading);
+            double rotY = xAxis * Math.sin(-botHeading) + yAxis * Math.cos(-botHeading);
+
+            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rotateAxis), 1);
+            double frontLeftPower = (rotY + rotX + rotateAxis) / denominator;
+            double backLeftPower = (rotY - rotX + rotateAxis) / denominator;
+            double frontRightPower = (rotY - rotX - rotateAxis) / denominator;
+            double backRightPower = (rotY + rotX - rotateAxis) / denominator;
+
+            int driveSpeedModifier = 1;
+
+            double stable_v1 = Stabilize(backLeftPower, current_v1);
+            double stable_v2 = Stabilize(frontRightPower, current_v2);
+            double stable_v3 = Stabilize(frontLeftPower, current_v3);
+            double stable_v4 = Stabilize(backRightPower, current_v4);
+
+            current_v1 = stable_v1;
+            current_v2 = stable_v2;
+            current_v3 = stable_v3;
+            current_v4 = stable_v4;
+
+            frontLM.setPower(stable_v3 / driveSpeedModifier);
+            frontRM.setPower(stable_v2 / driveSpeedModifier);
+            backLM.setPower(stable_v1 / driveSpeedModifier);
+            backRM.setPower(stable_v4 / driveSpeedModifier);
+
+            /* // assign speed modifier
             int driveSpeedModifier = 1;
 
             // mecanum
@@ -100,7 +151,7 @@ public class Manual_Macro extends OpMode {
             frontLM.setPower(stable_v3 / driveSpeedModifier);
             frontRM.setPower(stable_v2 / driveSpeedModifier);
             backLM.setPower(stable_v1 / driveSpeedModifier);
-            backRM.setPower(stable_v4 / driveSpeedModifier);
+            backRM.setPower(stable_v4 / driveSpeedModifier);*/
         }
     }
 
@@ -136,6 +187,11 @@ public class Manual_Macro extends OpMode {
 
         else if (gamepad1.dpad_right) {
             SCORING_BEHAVIOUR_LEFT = false;
+        }
+
+        if (gamepad1.y && gamepad1.x) {
+            fieldCentricRed = !fieldCentricRed;
+            Delay(200);
         }
     }
 
@@ -268,18 +324,18 @@ public class Manual_Macro extends OpMode {
     }
 
     private void UpdateArm() { // after updating target pos, must run this to make arm move
-        armM.setTargetPosition(targetArmPosition + 100);
+        armM.setTargetPosition(Math.abs(targetArmPosition + 100));
 
         if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
             armCanReset = false;
             armRuntime.reset();
             armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
 
-            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+            while (armM.getCurrentPosition() <= 100 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
             }
 
-            //armM.setVelocity(0);
+            armM.setVelocity(0);
             runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
@@ -327,6 +383,9 @@ public class Manual_Macro extends OpMode {
         frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
+        frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRM.setDirection(DcMotorSimple.Direction.REVERSE);
+
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
         armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armM.setTargetPosition(0);
@@ -335,29 +394,22 @@ public class Manual_Macro extends OpMode {
 
         // -------------------------------------------------------------- IMU INIT
 
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.mode                 = BNO055IMU.SensorMode.IMU;
-        parameters.angleUnit            = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit            = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled       = false;
+        IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
+                RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT
+        ));
 
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu = hardwareMap.get(IMU.class, HUB_IMU);
         imu.initialize(parameters);
 
-        telemetry.addData("Status", "CALIBRATING IMU...");
+        telemetry.addData("Status", "INITIALIZING IMU...");
         telemetry.update();
 
         Delay(500);
 
-        telemetry.addData("IMU Calibration Status", imu.getCalibrationStatus().toString());
-        telemetry.update();
-
-        Delay(2000);
-
         // -------------------------------------------------------------- TELEMETRY INIT
 
         telemetry.setAutoClear(false);
-
         telemetry.addData("Status", "INITIALIZATION COMPLETE!");
         telemetry.update();
     }
@@ -380,6 +432,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
         telemetry.addData("Score Behaviour: ", SCORING_BEHAVIOUR_LEFT);
+        telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
         telemetry.addData("BackRM Encoder Value: ", backRM.getCurrentPosition());
