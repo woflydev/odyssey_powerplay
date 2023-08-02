@@ -273,7 +273,7 @@ public class Manual_Macro extends OpMode {
             armRuntime.reset();
             armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
             while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-                telemetry.addData("ARM RESET DETECTED!", armM.getCurrentPosition());
+                telemetry.addData("ARM RESET DETECTED! ", armM.getCurrentPosition());
                 telemetry.update();
             }
             armM.setVelocity(0);
@@ -283,7 +283,14 @@ public class Manual_Macro extends OpMode {
         }
 
         else {
+            armRuntime.reset();
             armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                telemetry.addData("ARM MOVING!", armM.getCurrentPosition());
+                telemetry.update();
+            }
+
+            armM.setVelocity(0);
 
             if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
                 armCanReset = true;
