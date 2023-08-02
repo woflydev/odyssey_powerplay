@@ -119,6 +119,7 @@ public class Manual extends OpMode {
 
     private void Move(double power, int timeout, boolean forward) {
         // going at .5 power will take twice as long, hence timeout / power = distance
+        int dir = forward ? 1 : -1;
         timeout /= timeout > 0 ? power : 1;
 
         if (forward) {
@@ -158,6 +159,7 @@ public class Manual extends OpMode {
     }
 
     private void Turn(double power, int timeout, boolean right) {
+        int dir = right ? 1 : -1;
         timeout /= timeout > 0 ? power : 1;
 
         if (right) {

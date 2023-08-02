@@ -107,10 +107,12 @@ public class Manual_Macro extends OpMode {
         if (ADJUSTMENT_ALLOWED) {
             if (gamepad1.b && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+                UpdateArm();
             }
 
             else if (gamepad1.a && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
+                UpdateArm();
             }
         }
     }
@@ -118,10 +120,12 @@ public class Manual_Macro extends OpMode {
     private void RuntimeConfig() {
         if (gamepad1.dpad_down) {
             targetArmPosition = JUNCTION_OFF;
+            UpdateArm();
         }
 
         else if (gamepad1.dpad_up) {
             targetArmPosition = JUNCTION_HIGH;
+            UpdateArm();
         }
 
         if (gamepad1.dpad_left) {
@@ -222,40 +226,6 @@ public class Manual_Macro extends OpMode {
     private double Stabilize(double new_accel, double current_accel) {
         double dev = new_accel - current_accel;
         return Math.abs(dev) > MAX_ACCELERATION_DEVIATION ? current_accel + MAX_ACCELERATION_DEVIATION * dev / Math.abs(dev) : new_accel;
-    }
-
-    private void Move(double power, int timeout, boolean forward) {
-        int dir = forward ? 1 : -1;
-        timeout /= timeout > 0 ? power : 1; // .5 power will take twice as long, hence timeout / power = distance
-
-        frontLM.setPower(-power * dir);
-        frontRM.setPower(power * dir);
-        backLM.setPower(-power * dir);
-        backRM.setPower(power * dir);
-
-        Delay(timeout);
-
-        frontLM.setPower(0);
-        frontRM.setPower(0);
-        backLM.setPower(0);
-        backRM.setPower(0);
-    }
-
-    private void Turn(double power, int timeout, boolean right) {
-        int dir = right ? 1 : -1;
-        timeout /= timeout > 0 ? power : 1;
-
-        frontLM.setPower(-power * dir);
-        frontRM.setPower(-power * dir);
-        backLM.setPower(-power * dir);
-        backRM.setPower(-power * dir);
-
-        Delay(timeout);
-
-        frontLM.setPower(0);
-        frontRM.setPower(0);
-        backLM.setPower(0);
-        backRM.setPower(0);
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
