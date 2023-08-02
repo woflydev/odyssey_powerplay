@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -17,6 +18,7 @@ public class Manual_Macro extends OpMode {
     private DcMotorEx frontLM = null;
     private DcMotorEx frontRM = null;
     private DcMotorEx armM = null;
+    private BNO055IMU imu = null;
     private Servo claw;
 
     private final ElapsedTime encoderRuntime = new ElapsedTime();
@@ -57,7 +59,7 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_RESET_TIMEOUT = 3;
     private static final int ARM_RESET_THRESHOLD = 200; // will only reset if the arm has previously gone above this threshold
 
-    private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
+    private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
 
@@ -298,7 +300,7 @@ public class Manual_Macro extends OpMode {
         }
     }
 
-    // -------------------------------------------------------------- MAIN INIT
+    // -------------------------------------------------------------- MAIN INIT & LOOP
 
     public void init() {
         // Send telemetry message to signify robot waiting;
@@ -335,6 +337,29 @@ public class Manual_Macro extends OpMode {
         armM.setTargetPosition(0);
         armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // -------------------------------------------------------------- IMU INIT
+
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.mode                 = BNO055IMU.SensorMode.IMU;
+        parameters.angleUnit            = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit            = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled       = false;
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+
+        telemetry.addData("Status", "CALIBRATING IMU...");
+        telemetry.update();
+
+        Delay(500);
+
+        telemetry.addData("IMU Calibration Status", imu.getCalibrationStatus().toString());
+        telemetry.update();
+
+        Delay(2000);
+
+        // -------------------------------------------------------------- TELEMETRY INIT
 
         telemetry.setAutoClear(false);
 
