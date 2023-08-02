@@ -106,13 +106,15 @@ public class LocalTesting extends OpMode {
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int newLeftTarget = backLM.getCurrentPosition() + (int)(left * PPR);
-        int newRightTarget = backRM.getCurrentPosition() + (int)(right * PPR);
+        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
+        int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
+        int backRMTarget = backRM.getCurrentPosition() + (int)(right * PPR);
+        int frontRMTarget = frontRM.getCurrentPosition() + (int)(right * PPR);
 
-        backLM.setTargetPosition(-newLeftTarget); // used to be pos
-        frontLM.setTargetPosition(-newLeftTarget);
-        backRM.setTargetPosition(newRightTarget);
-        frontRM.setTargetPosition(newRightTarget);
+        backLM.setTargetPosition(backLMTarget); // used to be pos
+        frontLM.setTargetPosition(frontLMTarget);
+        backRM.setTargetPosition(backRMTarget);
+        frontRM.setTargetPosition(frontRMTarget);
 
         backLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         frontLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -126,7 +128,6 @@ public class LocalTesting extends OpMode {
         frontRM.setPower(Math.abs(power));
 
         while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
-            telemetry.addData("TARGET COORDINATE: ",  "%7d :%7d", newLeftTarget,  newRightTarget);
             telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
             telemetry.update();
         }
