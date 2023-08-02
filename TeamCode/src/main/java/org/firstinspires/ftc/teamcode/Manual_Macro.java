@@ -30,6 +30,7 @@ public class Manual_Macro extends OpMode {
     private double current_v4 = 0;
 
     private int runtimeArmMinimum = 0;
+    private boolean armCanReset = false;
 
     private boolean ADJUSTMENT_ALLOWED = true;
     private boolean clawOpen = true;
@@ -54,11 +55,11 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
     private static final int ARM_RESET_TIMEOUT = 3;
+    private static final int ARM_RESET_THRESHOLD = 200; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.2; // higher = less smoothing
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
-    //private static final double DRIVE_SPEED_MODIFIER = 1; // formula: ENCODER_TICKS * BASE_SPEED ticks per sec. 1 means motor is spinning 1 time per sec.
 
     // -------------------------------------------------------------- JUNCTION PRESETS
 
@@ -102,7 +103,7 @@ public class Manual_Macro extends OpMode {
     }
 
     private void Overrides() {
-        // best used for lining up arm for the topmost cone
+        // lining up arm for topmost cone
         if (ADJUSTMENT_ALLOWED) {
             if (gamepad1.b && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
@@ -111,25 +112,6 @@ public class Manual_Macro extends OpMode {
             else if (gamepad1.a && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
             }
-        }
-
-        armM.setTargetPosition(targetArmPosition);
-
-        if (targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) {
-            armRuntime.reset();
-            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
-            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-                telemetry.addLine("ARM RESET DETECTED!");
-                telemetry.update();
-            }
-            armM.setVelocity(0);
-            runtimeArmMinimum = armM.getCurrentPosition();
-            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
-            telemetry.update();
-        }
-
-        else {
-            armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER); // velocity used to be 1800
         }
     }
 
@@ -161,13 +143,13 @@ public class Manual_Macro extends OpMode {
 
                 EncoderMove(0.5, 1, 1, 5); // TODO: should be the length of the arm and front of robot
 
-                claw.setPosition(CLAW_CLOSE); // close claw
+                claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
 
-                Delay(150); // claw needs time to close
+                Delay(150); // claw needs time
 
-                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_HIGH); targetArmPosition = JUNCTION_HIGH;
+                targetArmPosition = JUNCTION_HIGH;
+                UpdateArm();
 
                 Delay(250);
 
@@ -181,31 +163,31 @@ public class Manual_Macro extends OpMode {
             else { // drop off cone
                 MotorMode(true);
                 ADJUSTMENT_ALLOWED = false;
-                claw.setPosition(CLAW_OPEN); // open claw
+                claw.setPosition(CLAW_OPEN); // open
                 clawOpen = true;
 
-                Delay(250); // need time for cone to drop
+                Delay(250); // need time to drop
 
                 EncoderMove(0.85, -0.5, -0.5, 5); // move back for clearance TODO: move back, tune timeout
 
                 Delay(150);
 
-                armM.setVelocity((double)2300 / ARM_BOOST_MODIFIER);
-                armM.setTargetPosition(JUNCTION_MID); targetArmPosition = JUNCTION_MID;
+                targetArmPosition = JUNCTION_MID;
+                UpdateArm();
 
-                EncoderMove(0.9, -2 * direction, 2 * direction, 4);
-                EncoderMove(0.9, 1, 1, 5);
+                EncoderMove(0.9, -2 * direction, 2 * direction, 4); // turn left or right
+                EncoderMove(0.9, 1, 1, 5); // move forward to line up
 
                 ADJUSTMENT_ALLOWED = true;
                 MotorMode(false);
             }
         }
 
-        else if (gamepad1.right_bumper) { // manual close without auto
+        else if (gamepad1.right_bumper) { // manual close and open
             if (clawOpen) {
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
-                Delay(200); // needs delay to register button press
+                Delay(200);
             }
             else {
                 claw.setPosition(CLAW_OPEN);
@@ -311,6 +293,32 @@ public class Manual_Macro extends OpMode {
         frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    private void UpdateArm() { // after updating target pos, must run this to make arm move
+        armM.setTargetPosition(targetArmPosition);
+
+        if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
+            armCanReset = false;
+            armRuntime.reset();
+            armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+            while (armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                telemetry.addData("ARM RESET DETECTED!", armM.getCurrentPosition());
+                telemetry.update();
+            }
+            armM.setVelocity(0);
+            runtimeArmMinimum = armM.getCurrentPosition();
+            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
+            telemetry.update();
+        }
+
+        else {
+            armM.setVelocity((double)1800 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+
+            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
+                armCanReset = true;
+            }
+        }
     }
 
     // -------------------------------------------------------------- MAIN INIT
