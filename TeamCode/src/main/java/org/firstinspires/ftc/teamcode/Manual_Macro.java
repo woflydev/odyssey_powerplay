@@ -175,6 +175,8 @@ public class Manual_Macro extends OpMode {
     }
 
     private void RuntimeConfig() {
+        // -------------------------------------------------------------- MANUAL ARM CONTROL
+
         if (adjustmentAllowed) { // lining up arm for topmost cone
             if (gamepad1.right_trigger >= 0.5 && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
@@ -187,7 +189,7 @@ public class Manual_Macro extends OpMode {
             }
         }
 
-        if (gamepad1.dpad_down) { // off
+        else if (gamepad1.dpad_down) { // off
             targetArmPosition = JUNCTION_OFF;
             UpdateArm();
         }
@@ -196,6 +198,8 @@ public class Manual_Macro extends OpMode {
             targetArmPosition = JUNCTION_HIGH;
             UpdateArm();
         }
+
+        // -------------------------------------------------------------- CONFIGURATION
 
         if (gamepad1.dpad_left) { // goes left on macro
             scoringBehaviourRight = true;
@@ -259,16 +263,16 @@ public class Manual_Macro extends OpMode {
                 claw.setPosition(CLAW_OPEN); // open
                 clawOpen = true;
 
-                Delay(250); // need time to drop
+                Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.2, -0.2, 3); // move back for clearance TODO: move back, tune timeout
+                EncoderMove(0.85, -0.15, -0.15, 3); // move back for clearance TODO: move back, tune timeout
 
                 Delay(250);
 
                 targetArmPosition = JUNCTION_MID;
                 UpdateArm();
 
-                EncoderMove(0.5, -2 * direction, 2 * direction, 4);
+                EncoderMove(0.5, -1.8 * direction, 1.8 * direction, 4);
                 EncoderMove(0.4, 1, 1, 5); // move forward to line up
 
                 adjustmentAllowed = true;
@@ -282,6 +286,7 @@ public class Manual_Macro extends OpMode {
             claw.setPosition(CLAW_OPEN);
             clawOpen = true;
 
+            EncoderMove(0.5, 0.1, 0.1, 3);
             EncoderMove(0.5, -0.5 * direction, -.5 * direction, 3);
             EncoderMove(0.5, 0.6, 0.6, 4);
         }
