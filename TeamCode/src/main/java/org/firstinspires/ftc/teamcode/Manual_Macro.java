@@ -66,7 +66,7 @@ public class Manual_Macro extends OpMode {
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
-    private static final int ARM_RESET_TIMEOUT = 2;
+    private static final int ARM_RESET_TIMEOUT = 3;
     private static final int ARM_RESET_THRESHOLD = 400; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
@@ -187,11 +187,11 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
                 UpdateArm();
             }
-        }
 
-        else if (gamepad1.dpad_down) { // off
-            targetArmPosition = JUNCTION_OFF;
-            UpdateArm();
+            else if (gamepad1.dpad_down) { // off
+                targetArmPosition = JUNCTION_OFF;
+                UpdateArm();
+            }
         }
 
         else if (gamepad1.dpad_up) { // high junction
@@ -265,7 +265,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.15, -0.15, 3); // move back for clearance TODO: move back, tune timeout
+                EncoderMove(0.85, -0.3, -0.3, 3); // move back for clearance TODO: move back, tune timeout
 
                 Delay(250);
 
@@ -364,7 +364,7 @@ public class Manual_Macro extends OpMode {
     }
 
     private void UpdateArm() { // after updating target pos, must run this to make arm move
-        armM.setTargetPosition(Math.abs(targetArmPosition));
+        armM.setTargetPosition(targetArmPosition);
 
         if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
             armCanReset = false;
