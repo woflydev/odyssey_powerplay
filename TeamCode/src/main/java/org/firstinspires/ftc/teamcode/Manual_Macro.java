@@ -14,8 +14,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-import java.util.Base64;
-
 // TODO FRIDAY: test new substation macro. tune all other macro parameters. TEST FIX TO WEIRD BUG PREVENTING MOVEMENT
 
 @TeleOp()
@@ -46,7 +44,7 @@ public class Manual_Macro extends OpMode {
 
     private boolean adjustmentAllowed = true;
 
-    private boolean scoringBehaviourRight = true; // turns left on score macro
+    private boolean scoringBehaviourRight = false; // turns left on score macro
     private boolean fieldCentricRed = true;
     private boolean fieldCentricDrive = true;
 
@@ -68,12 +66,12 @@ public class Manual_Macro extends OpMode {
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
-    private static final int ARM_RESET_TIMEOUT = 3;
-    private static final int ARM_RESET_THRESHOLD = 800; // will only reset if the arm has previously gone above this threshold
+    private static final int ARM_RESET_TIMEOUT = 2;
+    private static final int ARM_RESET_THRESHOLD = 400; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
     private static final double BASE_DRIVE_SPEED_MODIFIER = 1; // higher = less speed
-    private static final double PRECISION_DRIVE_SPEED_MODIFIER = 2;
+    private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3.5;
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
 
@@ -106,7 +104,9 @@ public class Manual_Macro extends OpMode {
             xAxis = -gamepad1.left_stick_x * 1.1 * dir;
             rotateAxis = -gamepad1.right_stick_x * dir;
 
-            if (gamepad1.back) imu.resetYaw();
+            if (gamepad1.back) {
+                imu.resetYaw();
+            }
 
             double heading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -212,20 +212,20 @@ public class Manual_Macro extends OpMode {
             Delay(50);
         }
 
-        if (gamepad1.y && gamepad1.back) { // toggle field centric drive
+        /*if (gamepad1.y && gamepad1.back) { // toggle field centric drive
             fieldCentricDrive = !fieldCentricDrive;
             if (fieldCentricDrive) {
-                frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
-                backRM.setDirection(DcMotorSimple.Direction.REVERSE);
+                //frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
+                //backRM.setDirection(DcMotorSimple.Direction.REVERSE);
             }
 
             else {
-                frontRM.setDirection(DcMotorSimple.Direction.FORWARD);
-                backRM.setDirection(DcMotorSimple.Direction.FORWARD);
+                //frontRM.setDirection(DcMotorSimple.Direction.FORWARD);
+                //backRM.setDirection(DcMotorSimple.Direction.FORWARD);
             }
 
             Delay(50);
-        }
+        }*/
     }
 
     private void Macros() {
@@ -247,8 +247,8 @@ public class Manual_Macro extends OpMode {
 
                 Delay(350);
 
-                EncoderMove(0.5, -1.8, -1.8, 4); // TODO: tune this to clear cone stack
-                EncoderMove(0.5, 2 * direction, -2 * direction, 4);
+                EncoderMove(0.5, -1.3, -1.3, 4); // TODO: tune this to clear cone stack
+                EncoderMove(0.5, 1.8 * direction, -1.8 * direction, 4);
 
                 adjustmentAllowed = true;
                 driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
@@ -368,7 +368,6 @@ public class Manual_Macro extends OpMode {
 
             while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
-                Mecanum(); // TODO: EXPERIMENTAL! MIGHT BREAK.
             }
 
             armM.setVelocity(0);
@@ -441,9 +440,9 @@ public class Manual_Macro extends OpMode {
                 RevHubOrientationOnRobot.UsbFacingDirection.RIGHT
         ));
 
-        imu.resetYaw();
         imu = hardwareMap.get(IMU.class, HUB_IMU);
         imu.initialize(parameters);
+        imu.resetYaw();
 
         Delay(1000);
 
