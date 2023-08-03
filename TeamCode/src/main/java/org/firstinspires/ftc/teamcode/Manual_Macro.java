@@ -77,7 +77,7 @@ public class Manual_Macro extends OpMode {
 
     // -------------------------------------------------------------- JUNCTION PRESETS
 
-    private static int JUNCTION_OFF = 0; // will change
+    private static final int JUNCTION_OFF = 0; // will change
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_STANDBY = 3200;
@@ -103,10 +103,6 @@ public class Manual_Macro extends OpMode {
             yAxis = gamepad1.left_stick_y * dir;
             xAxis = -gamepad1.left_stick_x * 1.1 * dir;
             rotateAxis = -gamepad1.right_stick_x * dir;
-
-            if (gamepad1.back) {
-                imu.resetYaw();
-            }
 
             double heading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
 
@@ -217,23 +213,14 @@ public class Manual_Macro extends OpMode {
         }
 
         if (gamepad1.start) {
-            JUNCTION_OFF = armM.getCurrentPosition();
+            armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            armM.setTargetPosition(0);
+            armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         }
 
-        /*if (gamepad1.y && gamepad1.back) { // toggle field centric drive
-            fieldCentricDrive = !fieldCentricDrive;
-            if (fieldCentricDrive) {
-                //frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
-                //backRM.setDirection(DcMotorSimple.Direction.REVERSE);
-            }
-
-            else {
-                //frontRM.setDirection(DcMotorSimple.Direction.FORWARD);
-                //backRM.setDirection(DcMotorSimple.Direction.FORWARD);
-            }
-
-            Delay(50);
-        }*/
+        if (gamepad1.back) {
+            imu.resetYaw();
+        }
     }
 
     private void Macros() {
@@ -411,7 +398,11 @@ public class Manual_Macro extends OpMode {
                 Mecanum();
             }
 
-            armM.setVelocity(0);
+            armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            armM.setTargetPosition(0);
+            armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            //armM.setVelocity(0);
             //runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
