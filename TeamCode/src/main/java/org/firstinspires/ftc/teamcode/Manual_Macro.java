@@ -14,7 +14,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-// TODO FRIDAY: test new substation macro. TEST FIX TO WEIRD BUG PREVENTING MOVEMENT
+// TODO NEW VERSION: more macros, using the IMU for more accurate rotations, make the NewUpdateArm code cleaner
+// TODO NEW VERSION: tweak precision mode to activate on more criteria (less often)
 
 @TeleOp()
 public class Manual_Macro extends OpMode {
