@@ -244,12 +244,12 @@ public class Manual_Macro extends OpMode {
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
 
-                Delay(250); // claw needs time
+                Delay(200); // claw needs time
 
                 targetArmPosition = JUNCTION_HIGH;
                 UpdateArm();
 
-                Delay(350);
+                Delay(300);
 
                 EncoderMove(0.5, -1.3, -1.3, 4); // TODO: tune this to clear cone stack
                 EncoderMove(0.5, 1.8 * direction, -1.8 * direction, 4);
