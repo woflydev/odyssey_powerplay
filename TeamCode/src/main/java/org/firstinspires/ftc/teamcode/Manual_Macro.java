@@ -364,7 +364,6 @@ public class Manual_Macro extends OpMode {
 
             while (armM.getCurrentPosition() <= 80 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
-                Mecanum();
             }
 
             armM.setVelocity(0);
