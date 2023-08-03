@@ -57,7 +57,7 @@ public class Manual_Macro extends OpMode {
     private static final double CLAW_CLOSE = 0.6;
     private static final double CLAW_OPEN = 0.43;
 
-    private static final int MAX_ARM_HEIGHT = 4150;
+    private static final int MAX_ARM_HEIGHT = 4050;
     private static final int MIN_ARM_HEIGHT = 0;
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
@@ -80,79 +80,77 @@ public class Manual_Macro extends OpMode {
     // -------------------------------------------------------------- ROBOT OPERATION
 
     private void Mecanum() {
-        if (ADJUSTMENT_ALLOWED) { // only take manual when not macro control
-            // IF GETTING RID OF MECANUM, GET RID OF REVERSE DIRECTION
-            double yAxis;
-            double xAxis;
-            double rotateAxis;
+        // IF GETTING RID OF MECANUM, GET RID OF REVERSE DIRECTION
+        double yAxis;
+        double xAxis;
+        double rotateAxis;
 
-            int dir = fieldCentricRed ? 1 : -1;
+        int dir = fieldCentricRed ? 1 : -1;
 
-            // all negative when field centric red
-            yAxis = gamepad1.left_stick_y * dir;
-            xAxis = -gamepad1.left_stick_x * 1.1 * dir;
-            rotateAxis = -gamepad1.right_stick_x * dir;
+        // all negative when field centric red
+        yAxis = gamepad1.left_stick_y * dir;
+        xAxis = -gamepad1.left_stick_x * 1.1 * dir;
+        rotateAxis = -gamepad1.right_stick_x * dir;
 
-            if (gamepad1.back) {
-                imu.resetYaw();
-            }
-
-            double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
-
-            // Rotate the movement direction counter to the bot's rotation
-            double rotX = xAxis * Math.cos(-botHeading) - yAxis * Math.sin(-botHeading);
-            double rotY = xAxis * Math.sin(-botHeading) + yAxis * Math.cos(-botHeading);
-
-            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rotateAxis), 1);
-            double frontLeftPower = (rotY + rotX + rotateAxis) / denominator;
-            double backLeftPower = (rotY - rotX + rotateAxis) / denominator;
-            double frontRightPower = (rotY - rotX - rotateAxis) / denominator;
-            double backRightPower = (rotY + rotX - rotateAxis) / denominator;
-
-            int driveSpeedModifier = 1;
-
-            double stable_v1 = Stabilize(backLeftPower, current_v1);
-            double stable_v2 = Stabilize(frontRightPower, current_v2);
-            double stable_v3 = Stabilize(frontLeftPower, current_v3);
-            double stable_v4 = Stabilize(backRightPower, current_v4);
-
-            current_v1 = stable_v1;
-            current_v2 = stable_v2;
-            current_v3 = stable_v3;
-            current_v4 = stable_v4;
-
-            frontLM.setPower(stable_v3 / driveSpeedModifier);
-            frontRM.setPower(stable_v2 / driveSpeedModifier);
-            backLM.setPower(stable_v1 / driveSpeedModifier);
-            backRM.setPower(stable_v4 / driveSpeedModifier);
-
-            /* // assign speed modifier
-            int driveSpeedModifier = 1;
-
-            // mecanum
-            double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
-            double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
-            double rightX = gamepad1.left_stick_y;
-            final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
-            final double v2 = r * Math.sin(robotAngle) - rightX; //front right
-            final double v3 = r * Math.sin(robotAngle) + rightX; //front left
-            final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
-
-            double stable_v1 = Stabilize(v1, current_v1);
-            double stable_v2 = Stabilize(v2, current_v2);
-            double stable_v3 = Stabilize(v3, current_v3);
-            double stable_v4 = Stabilize(v4, current_v4);
-
-            current_v1 = stable_v1;
-            current_v2 = stable_v2;
-            current_v3 = stable_v3;
-            current_v4 = stable_v4;
-
-            frontLM.setPower(stable_v3 / driveSpeedModifier);
-            frontRM.setPower(stable_v2 / driveSpeedModifier);
-            backLM.setPower(stable_v1 / driveSpeedModifier);
-            backRM.setPower(stable_v4 / driveSpeedModifier);*/
+        if (gamepad1.back) {
+            imu.resetYaw();
         }
+
+        double botHeading = imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS);
+
+        // Rotate the movement direction counter to the bot's rotation
+        double rotX = xAxis * Math.cos(-botHeading) - yAxis * Math.sin(-botHeading);
+        double rotY = xAxis * Math.sin(-botHeading) + yAxis * Math.cos(-botHeading);
+
+        double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rotateAxis), 1);
+        double frontLeftPower = (rotY + rotX + rotateAxis) / denominator;
+        double backLeftPower = (rotY - rotX + rotateAxis) / denominator;
+        double frontRightPower = (rotY - rotX - rotateAxis) / denominator;
+        double backRightPower = (rotY + rotX - rotateAxis) / denominator;
+
+        double driveSpeedModifier = 1.5;
+
+        double stable_v1 = Stabilize(backLeftPower, current_v1);
+        double stable_v2 = Stabilize(frontRightPower, current_v2);
+        double stable_v3 = Stabilize(frontLeftPower, current_v3);
+        double stable_v4 = Stabilize(backRightPower, current_v4);
+
+        current_v1 = stable_v1;
+        current_v2 = stable_v2;
+        current_v3 = stable_v3;
+        current_v4 = stable_v4;
+
+        frontLM.setPower(stable_v3 / driveSpeedModifier);
+        frontRM.setPower(stable_v2 / driveSpeedModifier);
+        backLM.setPower(stable_v1 / driveSpeedModifier);
+        backRM.setPower(stable_v4 / driveSpeedModifier);
+
+        /* // assign speed modifier
+        int driveSpeedModifier = 1;
+
+        // mecanum
+        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
+        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
+        double rightX = gamepad1.left_stick_y;
+        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
+        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
+        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
+        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
+
+        double stable_v1 = Stabilize(v1, current_v1);
+        double stable_v2 = Stabilize(v2, current_v2);
+        double stable_v3 = Stabilize(v3, current_v3);
+        double stable_v4 = Stabilize(v4, current_v4);
+
+        current_v1 = stable_v1;
+        current_v2 = stable_v2;
+        current_v3 = stable_v3;
+        current_v4 = stable_v4;
+
+        frontLM.setPower(stable_v3 / driveSpeedModifier);
+        frontRM.setPower(stable_v2 / driveSpeedModifier);
+        backLM.setPower(stable_v1 / driveSpeedModifier);
+        backRM.setPower(stable_v4 / driveSpeedModifier);*/
     }
 
     private void Overrides() {
@@ -189,7 +187,7 @@ public class Manual_Macro extends OpMode {
             SCORING_BEHAVIOUR_LEFT = false;
         }
 
-        if (gamepad1.y && gamepad1.x) {
+        if (gamepad1.y && gamepad1.x) { // changing field centric drive
             fieldCentricRed = !fieldCentricRed;
             Delay(200);
         }
@@ -215,8 +213,8 @@ public class Manual_Macro extends OpMode {
 
                 Delay(250);
 
-                EncoderMove(0.5, -8, -8, 5); // TODO: tune this to clear cone stack
-                EncoderMove(0.5, 2 * direction, -2 * direction, 4);
+                EncoderMove(0.5, -2.1, -2.1, 5); // TODO: tune this to clear cone stack
+                EncoderMove(0.5, 1.7 * direction, -1.7 * direction, 4);
 
                 ADJUSTMENT_ALLOWED = true;
                 MotorMode(false);
@@ -287,13 +285,15 @@ public class Manual_Macro extends OpMode {
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int newLeftTarget = backLM.getCurrentPosition() + (int)(left * PPR);
-        int newRightTarget = backRM.getCurrentPosition() + (int)(right * PPR);
+        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
+        int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
+        int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
+        int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
 
-        backLM.setTargetPosition(newLeftTarget);
-        frontLM.setTargetPosition(newLeftTarget);
-        backRM.setTargetPosition(newRightTarget);
-        frontRM.setTargetPosition(newRightTarget);
+        backLM.setTargetPosition(backLMTarget);
+        frontLM.setTargetPosition(frontLMTarget);
+        backRM.setTargetPosition(backRMTarget);
+        frontRM.setTargetPosition(frontRMTarget);
 
         backLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         frontLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -307,7 +307,6 @@ public class Manual_Macro extends OpMode {
         frontRM.setPower(Math.abs(power));
 
         while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
-            telemetry.addData("TARGET COORDINATE: ",  "%7d :%7d", newLeftTarget,  newRightTarget);
             telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
             telemetry.update();
         }
@@ -321,6 +320,8 @@ public class Manual_Macro extends OpMode {
         frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        Delay(50);
     }
 
     private void UpdateArm() { // after updating target pos, must run this to make arm move
@@ -430,8 +431,8 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Claw Open: ", clawOpen);
         telemetry.addData("Current Arm Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
-        telemetry.addData("Arm Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
-        telemetry.addData("Score Behaviour: ", SCORING_BEHAVIOUR_LEFT);
+        telemetry.addData("Adjustment Allowed: ", ADJUSTMENT_ALLOWED);
+        telemetry.addData("Score Behaviour: ", SCORING_BEHAVIOUR_LEFT ? "LEFT" : "RIGHT");
         telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
