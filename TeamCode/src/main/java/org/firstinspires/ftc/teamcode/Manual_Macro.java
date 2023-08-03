@@ -70,7 +70,7 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_RESET_THRESHOLD = 400; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
-    private static final double BASE_DRIVE_SPEED_MODIFIER = 1; // higher = less speed
+    private static final double BASE_DRIVE_SPEED_MODIFIER = 1.5; // higher = less speed
     private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3.5;
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
