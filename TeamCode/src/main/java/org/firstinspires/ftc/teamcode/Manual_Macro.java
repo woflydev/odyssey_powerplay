@@ -186,7 +186,7 @@ public class Manual_Macro extends OpMode {
 
             else if (gamepad1.dpad_down) { // off
                 targetArmPosition = JUNCTION_OFF;
-                UpdateArm();
+                NewUpdateArm(true);
             }
         }
 
@@ -394,14 +394,13 @@ public class Manual_Macro extends OpMode {
 
             while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
-                Mecanum();
             }
 
+            armM.setVelocity(0);
             armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             armM.setTargetPosition(0);
             armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            //armM.setVelocity(0);
             //runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
