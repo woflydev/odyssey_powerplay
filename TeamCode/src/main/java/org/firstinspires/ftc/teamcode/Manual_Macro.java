@@ -14,7 +14,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-// TODO FRIDAY: test new substation macro. tune all other macro parameters. TEST FIX TO WEIRD BUG PREVENTING MOVEMENT
+// TODO FRIDAY: test new substation macro. TEST FIX TO WEIRD BUG PREVENTING MOVEMENT
 
 @TeleOp()
 public class Manual_Macro extends OpMode {
@@ -371,12 +371,12 @@ public class Manual_Macro extends OpMode {
             armRuntime.reset();
             armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
 
-            while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+            while (armM.getCurrentPosition() <= 80 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
             }
 
             armM.setVelocity(0);
-            runtimeArmMinimum = armM.getCurrentPosition();
+            //runtimeArmMinimum = armM.getCurrentPosition();
             telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
         }
