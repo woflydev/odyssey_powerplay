@@ -107,6 +107,23 @@ public class LocalTesting extends OpMode {
         return Math.abs(dev) > MAX_ACCELERATION_DEVIATION ? current_accel + MAX_ACCELERATION_DEVIATION * dev / Math.abs(dev) : new_accel;
     }
 
+    // deprecated function, as EncoderMove has RUN_WITHOUT_ENCODERS built in
+    private void MotorMode(boolean auto) {
+        if (auto) {
+            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // motor tries to use encoder to run at constant velocity
+            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
+        else {
+            backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        }
+    }
+
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
         int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
         int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
