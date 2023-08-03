@@ -14,10 +14,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-// TODO FRIDAY: test new substation macro. TEST FIX TO WEIRD BUG PREVENTING MOVEMENT
+// TODO: IMPORTANT! SNAPSHOT CODE, SCORING WORKS INCLUDING MACROS, BUT NEXT VERSION WILL INCLUDE IMU CALCULATIONS FOR MACROS FOR MORE ACCURACY
 
 @TeleOp()
-public class Manual_Macro extends OpMode {
+public class SNAPSHOT_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
