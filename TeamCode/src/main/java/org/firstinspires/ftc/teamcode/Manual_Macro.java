@@ -77,7 +77,7 @@ public class Manual_Macro extends OpMode {
 
     // -------------------------------------------------------------- JUNCTION PRESETS
 
-    private static final int JUNCTION_OFF = 0;
+    private static int JUNCTION_OFF = 0; // will change
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_STANDBY = 3200;
@@ -216,6 +216,10 @@ public class Manual_Macro extends OpMode {
             Delay(50);
         }
 
+        if (gamepad1.start) {
+            JUNCTION_OFF = armM.getCurrentPosition();
+        }
+
         /*if (gamepad1.y && gamepad1.back) { // toggle field centric drive
             fieldCentricDrive = !fieldCentricDrive;
             if (fieldCentricDrive) {
@@ -252,7 +256,7 @@ public class Manual_Macro extends OpMode {
                 Delay(300);
 
                 EncoderMove(0.5, -1.3, -1.3, 4); // TODO: tune this to clear cone stack
-                EncoderMove(0.5, 1.8 * direction, -1.8 * direction, 4);
+                EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4);
 
                 adjustmentAllowed = true;
                 driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
@@ -269,10 +273,10 @@ public class Manual_Macro extends OpMode {
 
                 Delay(250);
 
-                targetArmPosition = JUNCTION_MID;
-                UpdateArm();
+                targetArmPosition = JUNCTION_OFF;
+                NewUpdateArm(true);
 
-                EncoderMove(0.5, -1.8 * direction, 1.8 * direction, 4);
+                EncoderMove(0.5, -1.9 * direction, 1.9 * direction, 4);
                 EncoderMove(0.4, 1, 1, 5); // move forward to line up
 
                 adjustmentAllowed = true;
@@ -373,6 +377,38 @@ public class Manual_Macro extends OpMode {
 
             while (armM.getCurrentPosition() <= 80 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 telemetry.update();
+                Mecanum();
+            }
+
+            armM.setVelocity(0);
+            //runtimeArmMinimum = armM.getCurrentPosition();
+            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
+            telemetry.update();
+        }
+
+        else {
+            armRuntime.reset();
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+
+            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
+                armCanReset = true;
+            }
+        }
+    }
+
+    private void NewUpdateArm(boolean reset) { // test new function
+        armM.setTargetPosition(targetArmPosition);
+
+        if (reset) {
+            armM.setTargetPosition(10);
+            targetArmPosition = 10;
+            armCanReset = false;
+            armRuntime.reset();
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
+
+            while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                telemetry.update();
+                Mecanum();
             }
 
             armM.setVelocity(0);
