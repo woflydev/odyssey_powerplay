@@ -32,8 +32,6 @@ public class Manual_Macro extends OpMode {
     private final ElapsedTime armRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
-    private int runtimeArmMinimum = 0;
-    private boolean armCanReset = false;
     private boolean clawOpen = true;
 
     private double current_v1 = 0;
@@ -47,7 +45,8 @@ public class Manual_Macro extends OpMode {
 
     private boolean scoringBehaviourRight = false; // turns left on score macro
     private boolean fieldCentricRed = true;
-    private boolean fieldCentricDrive = true;
+
+    private static final boolean fieldCentricDrive = true;
 
     // -------------------------------------------------------------- ROBOT CONFIG
 
@@ -68,7 +67,6 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
     private static final int ARM_RESET_TIMEOUT = 3;
-    private static final int ARM_RESET_THRESHOLD = 400; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
     private static final double BASE_DRIVE_SPEED_MODIFIER = 1.5; // higher = less speed
@@ -142,45 +140,18 @@ public class Manual_Macro extends OpMode {
         frontRM.setPower(stable_v2 / driveSpeedModifier);
         backLM.setPower(stable_v1 / driveSpeedModifier);
         backRM.setPower(stable_v4 / driveSpeedModifier);
-
-        /* // assign speed modifier
-        int driveSpeedModifier = 1;
-
-        // mecanum
-        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
-        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
-        double rightX = gamepad1.left_stick_y;
-        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
-        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
-        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
-        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
-
-        double stable_v1 = Stabilize(v1, current_v1);
-        double stable_v2 = Stabilize(v2, current_v2);
-        double stable_v3 = Stabilize(v3, current_v3);
-        double stable_v4 = Stabilize(v4, current_v4);
-
-        current_v1 = stable_v1;
-        current_v2 = stable_v2;
-        current_v3 = stable_v3;
-        current_v4 = stable_v4;
-
-        frontLM.setPower(stable_v3 / driveSpeedModifier);
-        frontRM.setPower(stable_v2 / driveSpeedModifier);
-        backLM.setPower(stable_v1 / driveSpeedModifier);
-        backRM.setPower(stable_v4 / driveSpeedModifier);*/
     }
 
     private void RuntimeConfig() {
-        // -------------------------------------------------------------- MANUAL ARM CONTROL
+        // -------------------------------------------------------------- MANUAL ARM CONTROL (directly effects bot)
 
         if (adjustmentAllowed) { // lining up arm for topmost cone
-            if ((gamepad1.right_trigger >= 0.5 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
+            if ((gamepad1.right_trigger >= 0.6 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
                 NewUpdateArm(false);
             }
 
-            else if ((gamepad1.left_trigger >= 0.5 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
+            else if ((gamepad1.left_trigger >= 0.6 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
                 NewUpdateArm(false);
             }
@@ -189,14 +160,14 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
             }
+
+            else if (gamepad1.dpad_up || gamepad2.dpad_up) { // high junction
+                targetArmPosition = JUNCTION_HIGH;
+                NewUpdateArm(false);
+            }
         }
 
-        else if (gamepad1.dpad_up || gamepad2.dpad_up) { // high junction
-            targetArmPosition = JUNCTION_HIGH;
-            NewUpdateArm(false);
-        }
-
-        // -------------------------------------------------------------- CONFIGURATION
+        // -------------------------------------------------------------- CONFIGURATION (don't directly move the bot)
 
         if (gamepad1.dpad_left) { // goes left on macro
             scoringBehaviourRight = true;
@@ -213,22 +184,21 @@ public class Manual_Macro extends OpMode {
             Delay(50);
         }
 
-        if (gamepad1.start) {
-            armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            armM.setTargetPosition(0);
-            armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        }
-
-        if (gamepad1.back) {
+        if (gamepad1.start) { // re-calibrate field centric drive
             imu.resetYaw();
         }
 
-        if (clawOpen) {
-            driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
+        if (!clawOpen && armM.getCurrentPosition() >= JUNCTION_MID - 30) { // arm has to be high and claw closed to activate precision mode
+            driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
+        }
+
+        else if ((gamepad1.left_trigger >= 0.25 && gamepad1.right_trigger >= 0.25) ||
+                (gamepad2.left_trigger >= 0.25 && gamepad2.right_trigger >= 0.25)) {
+            driveSpeedModifier = driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? PRECISION_DRIVE_SPEED_MODIFIER : BASE_DRIVE_SPEED_MODIFIER;
         }
 
         else {
-            driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
+            driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
         }
     }
 
@@ -363,41 +333,12 @@ public class Manual_Macro extends OpMode {
         Delay(50);
     }
 
-    /*private void UpdateArm() { // after updating target pos, must run this to make arm move
-        armM.setTargetPosition(targetArmPosition);
-
-        if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
-            armCanReset = false;
-            armRuntime.reset();
-            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
-
-            while (armM.getCurrentPosition() <= 80 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-                telemetry.update();
-            }
-
-            armM.setVelocity(0);
-            //runtimeArmMinimum = armM.getCurrentPosition();
-            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
-            telemetry.update();
-        }
-
-        else {
-            armRuntime.reset();
-            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
-
-            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
-                armCanReset = true;
-            }
-        }
-    }*/
-
     private void NewUpdateArm(boolean reset) { // test new function
         armM.setTargetPosition(targetArmPosition);
 
         if (reset) {
             armM.setTargetPosition(30);
             targetArmPosition = 30;
-            armCanReset = false;
             armRuntime.reset();
 
             while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
@@ -412,23 +353,12 @@ public class Manual_Macro extends OpMode {
                 armM.setVelocity(0);
             }
 
-            //armM.setVelocity(0);
-            //armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            //armM.setTargetPosition(0);
-            //armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-            //runtimeArmMinimum = armM.getCurrentPosition();
-            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
         }
 
         else {
             armRuntime.reset();
             armM.setVelocity((double)2500 / ARM_BOOST_MODIFIER); // velocity used to be 1800
-
-            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
-                armCanReset = true;
-            }
         }
     }
 
