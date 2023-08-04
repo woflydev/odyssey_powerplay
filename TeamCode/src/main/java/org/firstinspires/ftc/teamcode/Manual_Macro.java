@@ -13,6 +13,8 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
 // TODO NEW VERSION: more macros, using the IMU for more accurate rotations, make the NewUpdateArm code cleaner
 // TODO NEW VERSION: tweak precision mode to activate on more criteria (less often)
@@ -45,6 +47,9 @@ public class Manual_Macro extends OpMode {
 
     private boolean scoringBehaviourRight = false; // turns left on score macro
     private boolean fieldCentricRed = true;
+
+    private double previousHeading = 0; // for turning with the imu
+    private double integratedHeading = 0;
 
     private static final boolean fieldCentricDrive = true;
 
@@ -292,6 +297,22 @@ public class Manual_Macro extends OpMode {
         return Math.abs(dev) > MAX_ACCELERATION_DEVIATION ? current_accel + MAX_ACCELERATION_DEVIATION * dev / Math.abs(dev) : new_accel;
     }
 
+    private double GetHeading() {
+        double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
+        double deltaHeading = currentHeading - previousHeading;
+
+        if (deltaHeading < -180) {
+            deltaHeading += 360;
+        } else if (deltaHeading >= 180) {
+            deltaHeading -= 360;
+        }
+
+        integratedHeading += deltaHeading;
+        previousHeading = currentHeading;
+
+        return integratedHeading;
+    }
+
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
         int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
         int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
@@ -449,10 +470,13 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
-        telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
+        telemetry.addData("IMU Yaw: ", GetHeading());
+
+        /*telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
         telemetry.addData("BackRM Encoder Value: ", backRM.getCurrentPosition());
-        telemetry.addData("BackLM Encoder Value: ", backLM.getCurrentPosition());
+        telemetry.addData("BackLM Encoder Value: ", backLM.getCurrentPosition());*/
+
         telemetry.update();
     }
 }
