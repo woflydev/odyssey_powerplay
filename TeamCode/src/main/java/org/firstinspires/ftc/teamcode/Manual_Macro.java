@@ -396,6 +396,17 @@ public class Manual_Macro extends OpMode {
             frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            encoderRuntime.reset();
+
+            double margin = absoluteTargetRot - GetHeading();
+            while ((encoderRuntime.seconds() <= safetyTimeout) && (Math.abs(margin) > 4)) {
+                backLM.setPower(power); // TODO: might have to tune this with negatives to account for motor directions
+                frontLM.setPower(power);
+                backRM.setPower(-power);
+                frontRM.setPower(-power);
+                margin = absoluteTargetRot - GetHeading();
+            }
         }
 
         else {
