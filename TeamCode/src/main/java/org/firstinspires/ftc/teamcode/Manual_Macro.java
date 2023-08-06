@@ -199,7 +199,7 @@ public class Manual_Macro extends OpMode {
 
         else if ((gamepad1.left_trigger >= 0.25 && gamepad1.right_trigger >= 0.25) ||
                 (gamepad2.left_trigger >= 0.25 && gamepad2.right_trigger >= 0.25)) {
-            driveSpeedModifier = driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? PRECISION_DRIVE_SPEED_MODIFIER : BASE_DRIVE_SPEED_MODIFIER;
+            driveSpeedModifier = (driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER) ? PRECISION_DRIVE_SPEED_MODIFIER : BASE_DRIVE_SPEED_MODIFIER;
         }
 
         else {
@@ -210,7 +210,7 @@ public class Manual_Macro extends OpMode {
     private void Macros() {
         int direction = scoringBehaviourRight ? 1 : -1;
 
-        if (gamepad1.left_bumper || gamepad2.left_bumper) {
+        if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
@@ -230,7 +230,6 @@ public class Manual_Macro extends OpMode {
                 EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4);
 
                 adjustmentAllowed = true;
-                driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
             }
 
             else { // drop off cone
@@ -247,11 +246,48 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.5, -2 * direction, 2 * direction, 4);
-                EncoderMove(0.4, 1, 1, 5); // move forward to line up
+                EncoderMove(0.5, -2.3 * direction, 2.3 * direction, 4);
+                EncoderMove(0.4, 0.8, 0.8, 5); // move forward to line up
 
                 adjustmentAllowed = true;
-                driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
+            }
+        }
+
+        else if ((gamepad1.b && gamepad1.left_bumper) || (gamepad2.b && gamepad2.left_bumper)) {
+            if (clawOpen) {
+                adjustmentAllowed = false;
+
+                EncoderMove(0.8, 0.4, 0.4, 3);
+
+                claw.setPosition(CLAW_CLOSE);
+                clawOpen = false;
+
+                EncoderMove(0.8, 0.7, -0.7, 3);
+
+                targetArmPosition = JUNCTION_HIGH;
+                NewUpdateArm(false);
+
+                EncoderMove(0.8, 1.5, 1.5, 3);
+
+                adjustmentAllowed = true;
+            }
+
+            else {
+                adjustmentAllowed = false;
+
+                claw.setPosition(CLAW_OPEN);
+                clawOpen = true;
+
+                Delay(200);
+
+                EncoderMove(0.9, -1.3, -1.3, 3);
+
+                targetArmPosition = JUNCTION_OFF;
+                NewUpdateArm(true);
+
+                EncoderMove(0.8, -0.7, 0.7, 3);
+
+                adjustmentAllowed = true;
             }
         }
 
@@ -314,7 +350,7 @@ public class Manual_Macro extends OpMode {
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
+        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
         int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
         int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
         int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
@@ -339,6 +375,57 @@ public class Manual_Macro extends OpMode {
             telemetry.clear();
             telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
             telemetry.update();
+        }
+
+        backLM.setPower(0);
+        frontLM.setPower(0);
+        backRM.setPower(0);
+        frontRM.setPower(0);
+
+        backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        Delay(50);
+    }
+
+    private void EncoderTransform(double power, double left, double right, boolean useIMU, double absoluteTargetRot, double safetyTimeout) {
+        if (useIMU) {
+            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        }
+
+        else {
+            // new transformation algorithm with IMU turning
+            int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
+            int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
+            int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
+            int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
+
+            backLM.setTargetPosition(backLMTarget);
+            frontLM.setTargetPosition(frontLMTarget);
+            backRM.setTargetPosition(backRMTarget);
+            frontRM.setTargetPosition(frontRMTarget);
+
+            backLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            encoderRuntime.reset();
+            backLM.setPower(Math.abs(power));
+            frontLM.setPower(Math.abs(power));
+            backRM.setPower(Math.abs(power));
+            frontRM.setPower(Math.abs(power));
+
+            while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
+                telemetry.clear();
+                telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
+                telemetry.update();
+            }
         }
 
         backLM.setPower(0);
