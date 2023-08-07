@@ -474,7 +474,9 @@ public class Manual_Macro extends OpMode {
                 }
             }
 
-            armM.setVelocity(0);
+            if (armM.getCurrentPosition() <= 50) {
+                armM.setVelocity(0);
+            }
 
             telemetry.update();
         }
