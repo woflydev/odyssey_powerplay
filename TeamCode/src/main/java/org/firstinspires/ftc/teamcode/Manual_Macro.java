@@ -62,8 +62,8 @@ public class Manual_Macro extends OpMode {
     private static final String ARM_MOTOR = "armMotor";
     private static final String HUB_IMU = "imu";
 
-    private static final double CLAW_CLOSE = 0.6;
-    private static final double CLAW_OPEN = 0.43;
+    private static final double CLAW_CLOSE = 0.45;
+    private static final double CLAW_OPEN = 0.3;
 
     private static final int MAX_ARM_HEIGHT = 4050;
     private static final int MIN_ARM_HEIGHT = 0;
@@ -256,17 +256,21 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(0.8, 0.4, 0.4, 3);
+                EncoderMove(0.8, 0.5, 0.5, 5);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
 
-                EncoderMove(0.8, 0.7, -0.7, 3);
+                Delay(200);
+
+                EncoderMove(0.8, 2.7, -2.7, 10);
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
-                EncoderMove(0.8, 1.5, 1.5, 3);
+                Delay(300);
+
+                EncoderMove(0.8, 1.1, 1.1, 5);
 
                 adjustmentAllowed = true;
             }
@@ -279,12 +283,12 @@ public class Manual_Macro extends OpMode {
 
                 Delay(200);
 
-                EncoderMove(0.9, -1.3, -1.3, 3);
+                EncoderMove(0.9, -0.6, -0.6, 3);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.8, -0.7, 0.7, 3);
+                EncoderMove(0.8, -2.7, 2.7, 3);
 
                 adjustmentAllowed = true;
             }
@@ -459,17 +463,15 @@ public class Manual_Macro extends OpMode {
             targetArmPosition = 30;
             armRuntime.reset();
 
-            while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+            while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
 
-                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
                     break;
                 }
             }
 
-            if (armM.getCurrentPosition() <= 50) {
-                armM.setVelocity(0);
-            }
+            armM.setVelocity(0);
 
             telemetry.update();
         }
