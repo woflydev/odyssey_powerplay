@@ -13,14 +13,12 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
-import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
-// TODO NEW VERSION: more macros, using the IMU for more accurate rotations, make the NewUpdateArm code cleaner
-// TODO NEW VERSION: tweak precision mode to activate on more criteria (less often)
+// TODO: IMPORTANT! SNAPSHOT CODE, SCORING WORKS INCLUDING MACROS, BUT NEXT VERSION WILL INCLUDE IMU CALCULATIONS FOR MACROS FOR MORE ACCURACY
+// TODO: THIS VERSION INCLUDES ARM CONTROLS FOR A SECONDARY GAMEPAD. ROBOT IS STILL OPERATIONAL THROUGH SINGLE GAMEPAD.
 
 @TeleOp()
-public class Manual_Macro extends OpMode {
+public class SP1_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
@@ -34,6 +32,8 @@ public class Manual_Macro extends OpMode {
     private final ElapsedTime armRuntime = new ElapsedTime();
 
     private int targetArmPosition = 0;
+    private int runtimeArmMinimum = 0;
+    private boolean armCanReset = false;
     private boolean clawOpen = true;
 
     private double current_v1 = 0;
@@ -47,11 +47,7 @@ public class Manual_Macro extends OpMode {
 
     private boolean scoringBehaviourRight = false; // turns left on score macro
     private boolean fieldCentricRed = true;
-
-    private double previousHeading = 0; // for turning with the imu
-    private double integratedHeading = 0;
-
-    private static final boolean fieldCentricDrive = true;
+    private boolean fieldCentricDrive = true;
 
     // -------------------------------------------------------------- ROBOT CONFIG
 
@@ -72,6 +68,7 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
     private static final int ARM_BOOST_MODIFIER = 1;
     private static final int ARM_RESET_TIMEOUT = 3;
+    private static final int ARM_RESET_THRESHOLD = 400; // will only reset if the arm has previously gone above this threshold
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
     private static final double BASE_DRIVE_SPEED_MODIFIER = 1.5; // higher = less speed
@@ -145,18 +142,45 @@ public class Manual_Macro extends OpMode {
         frontRM.setPower(stable_v2 / driveSpeedModifier);
         backLM.setPower(stable_v1 / driveSpeedModifier);
         backRM.setPower(stable_v4 / driveSpeedModifier);
+
+        /* // assign speed modifier
+        int driveSpeedModifier = 1;
+
+        // mecanum
+        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.right_stick_x);
+        double robotAngle = Math.atan2(- 1 * gamepad1.right_stick_x, gamepad1.left_stick_x) - Math.PI / 4;
+        double rightX = gamepad1.left_stick_y;
+        final double v1 = r * Math.cos(-robotAngle) + rightX; //back left
+        final double v2 = r * Math.sin(robotAngle) - rightX; //front right
+        final double v3 = r * Math.sin(robotAngle) + rightX; //front left
+        final double v4 = r * Math.cos(-robotAngle) - rightX; //back right
+
+        double stable_v1 = Stabilize(v1, current_v1);
+        double stable_v2 = Stabilize(v2, current_v2);
+        double stable_v3 = Stabilize(v3, current_v3);
+        double stable_v4 = Stabilize(v4, current_v4);
+
+        current_v1 = stable_v1;
+        current_v2 = stable_v2;
+        current_v3 = stable_v3;
+        current_v4 = stable_v4;
+
+        frontLM.setPower(stable_v3 / driveSpeedModifier);
+        frontRM.setPower(stable_v2 / driveSpeedModifier);
+        backLM.setPower(stable_v1 / driveSpeedModifier);
+        backRM.setPower(stable_v4 / driveSpeedModifier);*/
     }
 
     private void RuntimeConfig() {
-        // -------------------------------------------------------------- MANUAL ARM CONTROL (directly effects bot)
+        // -------------------------------------------------------------- MANUAL ARM CONTROL
 
         if (adjustmentAllowed) { // lining up arm for topmost cone
-            if ((gamepad1.right_trigger >= 0.6 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
+            if ((gamepad1.right_trigger >= 0.5 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
                 NewUpdateArm(false);
             }
 
-            else if ((gamepad1.left_trigger >= 0.6 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
+            else if ((gamepad1.left_trigger >= 0.5 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
                 targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
                 NewUpdateArm(false);
             }
@@ -165,14 +189,14 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
             }
-
-            else if (gamepad1.dpad_up || gamepad2.dpad_up) { // high junction
-                targetArmPosition = JUNCTION_HIGH;
-                NewUpdateArm(false);
-            }
         }
 
-        // -------------------------------------------------------------- CONFIGURATION (don't directly move the bot)
+        else if (gamepad1.dpad_up || gamepad2.dpad_up) { // high junction
+            targetArmPosition = JUNCTION_HIGH;
+            NewUpdateArm(false);
+        }
+
+        // -------------------------------------------------------------- CONFIGURATION
 
         if (gamepad1.dpad_left) { // goes left on macro
             scoringBehaviourRight = true;
@@ -189,28 +213,29 @@ public class Manual_Macro extends OpMode {
             Delay(50);
         }
 
-        if (gamepad1.start) { // re-calibrate field centric drive
+        if (gamepad1.start) {
+            armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            armM.setTargetPosition(0);
+            armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        }
+
+        if (gamepad1.back) {
             imu.resetYaw();
         }
 
-        if (!clawOpen && armM.getCurrentPosition() >= JUNCTION_MID - 30) { // arm has to be high and claw closed to activate precision mode
-            driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
-        }
-
-        else if ((gamepad1.left_trigger >= 0.25 && gamepad1.right_trigger >= 0.25) ||
-                (gamepad2.left_trigger >= 0.25 && gamepad2.right_trigger >= 0.25)) {
-            driveSpeedModifier = (driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER) ? PRECISION_DRIVE_SPEED_MODIFIER : BASE_DRIVE_SPEED_MODIFIER;
+        if (clawOpen) {
+            driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
         }
 
         else {
-            driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
+            driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
         }
     }
 
     private void Macros() {
         int direction = scoringBehaviourRight ? 1 : -1;
 
-        if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
+        if (gamepad1.left_bumper || gamepad2.left_bumper) {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
@@ -230,6 +255,7 @@ public class Manual_Macro extends OpMode {
                 EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4);
 
                 adjustmentAllowed = true;
+                driveSpeedModifier = PRECISION_DRIVE_SPEED_MODIFIER;
             }
 
             else { // drop off cone
@@ -246,48 +272,11 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.5, -2.3 * direction, 2.3 * direction, 4);
-                EncoderMove(0.4, 0.8, 0.8, 5); // move forward to line up
+                EncoderMove(0.5, -2 * direction, 2 * direction, 4);
+                EncoderMove(0.4, 1, 1, 5); // move forward to line up
 
                 adjustmentAllowed = true;
-            }
-        }
-
-        else if ((gamepad1.b && gamepad1.left_bumper) || (gamepad2.b && gamepad2.left_bumper)) {
-            if (clawOpen) {
-                adjustmentAllowed = false;
-
-                EncoderMove(0.8, 0.4, 0.4, 3);
-
-                claw.setPosition(CLAW_CLOSE);
-                clawOpen = false;
-
-                EncoderMove(0.8, 0.7, -0.7, 3);
-
-                targetArmPosition = JUNCTION_HIGH;
-                NewUpdateArm(false);
-
-                EncoderMove(0.8, 1.5, 1.5, 3);
-
-                adjustmentAllowed = true;
-            }
-
-            else {
-                adjustmentAllowed = false;
-
-                claw.setPosition(CLAW_OPEN);
-                clawOpen = true;
-
-                Delay(200);
-
-                EncoderMove(0.9, -1.3, -1.3, 3);
-
-                targetArmPosition = JUNCTION_OFF;
-                NewUpdateArm(true);
-
-                EncoderMove(0.8, -0.7, 0.7, 3);
-
-                adjustmentAllowed = true;
+                driveSpeedModifier = BASE_DRIVE_SPEED_MODIFIER;
             }
         }
 
@@ -333,24 +322,8 @@ public class Manual_Macro extends OpMode {
         return Math.abs(dev) > MAX_ACCELERATION_DEVIATION ? current_accel + MAX_ACCELERATION_DEVIATION * dev / Math.abs(dev) : new_accel;
     }
 
-    private double GetHeading() {
-        double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-        double deltaHeading = currentHeading - previousHeading;
-
-        if (deltaHeading < -180) {
-            deltaHeading += 360;
-        } else if (deltaHeading >= 180) {
-            deltaHeading -= 360;
-        }
-
-        integratedHeading += deltaHeading;
-        previousHeading = currentHeading;
-
-        return integratedHeading;
-    }
-
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
+        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR); // should theoretically make it go backwards
         int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
         int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
         int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
@@ -390,69 +363,33 @@ public class Manual_Macro extends OpMode {
         Delay(50);
     }
 
-    private void EncoderTransform(double power, double left, double right, boolean useIMU, double absoluteTargetRot, double safetyTimeout) {
-        if (useIMU) {
-            backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-            frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    /*private void UpdateArm() { // after updating target pos, must run this to make arm move
+        armM.setTargetPosition(targetArmPosition);
 
-            encoderRuntime.reset()
+        if ((targetArmPosition <= JUNCTION_OFF || targetArmPosition <= runtimeArmMinimum) && armCanReset) {
+            armCanReset = false;
+            armRuntime.reset();
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
 
-            double margin = absoluteTargetRot - GetHeading();
-            double dir = (absoluteTargetRot - GetHeading()) >= 180 ? 1 : -1;
-            while ((encoderRuntime.seconds() <= safetyTimeout) && (Math.abs(margin) > 4)) {
-                backLM.setPower(power * dir); // TODO: might have to tune this with negatives to account for motor directions
-                frontLM.setPower(power * dir);
-                backRM.setPower(-power * dir);
-                frontRM.setPower(-power * dir);
-
-                margin = absoluteTargetRot - GetHeading();
+            while (armM.getCurrentPosition() <= 80 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                telemetry.update();
             }
+
+            armM.setVelocity(0);
+            //runtimeArmMinimum = armM.getCurrentPosition();
+            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
+            telemetry.update();
         }
 
         else {
-            // new transformation algorithm with IMU turning
-            int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
-            int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
-            int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
-            int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
+            armRuntime.reset();
+            armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER); // velocity used to be 1800
 
-            backLM.setTargetPosition(backLMTarget);
-            frontLM.setTargetPosition(frontLMTarget);
-            backRM.setTargetPosition(backRMTarget);
-            frontRM.setTargetPosition(frontRMTarget);
-
-            backLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            frontLM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            backRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            frontRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-
-            encoderRuntime.reset();
-            backLM.setPower(Math.abs(power));
-            frontLM.setPower(Math.abs(power));
-            backRM.setPower(Math.abs(power));
-            frontRM.setPower(Math.abs(power));
-
-            while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
-                telemetry.clear();
-                telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
-                telemetry.update();
+            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
+                armCanReset = true;
             }
         }
-
-        backLM.setPower(0);
-        frontLM.setPower(0);
-        backRM.setPower(0);
-        frontRM.setPower(0);
-
-        backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-
-        Delay(50);
-    }
+    }*/
 
     private void NewUpdateArm(boolean reset) { // test new function
         armM.setTargetPosition(targetArmPosition);
@@ -460,6 +397,7 @@ public class Manual_Macro extends OpMode {
         if (reset) {
             armM.setTargetPosition(30);
             targetArmPosition = 30;
+            armCanReset = false;
             armRuntime.reset();
 
             while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
@@ -474,12 +412,23 @@ public class Manual_Macro extends OpMode {
                 armM.setVelocity(0);
             }
 
+            //armM.setVelocity(0);
+            //armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            //armM.setTargetPosition(0);
+            //armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            //runtimeArmMinimum = armM.getCurrentPosition();
+            telemetry.addData("ARM RESET AT: ", runtimeArmMinimum);
             telemetry.update();
         }
 
         else {
             armRuntime.reset();
             armM.setVelocity((double)2500 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+
+            if (targetArmPosition >= ARM_RESET_THRESHOLD) { // if the arm has been lifted up, it can be reset
+                armCanReset = true;
+            }
         }
     }
 
@@ -570,13 +519,10 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
-        telemetry.addData("IMU Yaw: ", GetHeading());
-
-        /*telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
+        telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());
         telemetry.addData("BackRM Encoder Value: ", backRM.getCurrentPosition());
-        telemetry.addData("BackLM Encoder Value: ", backLM.getCurrentPosition());*/
-
+        telemetry.addData("BackLM Encoder Value: ", backLM.getCurrentPosition());
         telemetry.update();
     }
 }
