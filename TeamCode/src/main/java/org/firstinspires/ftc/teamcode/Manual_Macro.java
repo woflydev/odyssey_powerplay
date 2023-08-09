@@ -406,7 +406,7 @@ public class Manual_Macro extends OpMode {
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-            encoderRuntime.reset()
+            encoderRuntime.reset();
 
             double margin = absoluteTargetRot - GetHeading();
             double dir = (absoluteTargetRot - GetHeading()) >= 180 ? 1 : -1;
