@@ -341,18 +341,21 @@ public class Manual_Macro extends OpMode {
 
     private double GetHeading() {
         double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-        double deltaHeading = currentHeading - previousHeading;
+        return (double)(Math.round(-currentHeading + 720) % 360);
 
-        if (deltaHeading < -180) {
-            deltaHeading += 360;
+        /*if (deltaHeading < -180) {
+            //deltaHeading += 360;
+            deltaHeading += 0;
         } else if (deltaHeading >= 180) {
-            deltaHeading -= 360;
+            //deltaHeading -= 360;
+            deltaHeading -= 0;
+        }*/
+
+        /*if (currentHeading < 0) {
+            currentHeading = (currentHeading % 360) + 360; // Bring negative angle into the positive range
         }
 
-        integratedHeading += deltaHeading;
-        previousHeading = currentHeading;
-
-        return integratedHeading;
+        double convertedAngle = (currentHeading + 90) % 360;*/
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
@@ -466,15 +469,16 @@ public class Manual_Macro extends OpMode {
             targetArmPosition = 30;
             armRuntime.reset();
 
-            while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+            // this while loop is blocking, therefore we don't use it
+            /*while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
 
                 if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
                     break;
                 }
-            }
+            }*/
 
-            if (armM.getCurrentPosition() <= 50) {
+            if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
                 armM.setVelocity(0);
             }
 
