@@ -17,7 +17,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
 // TODO NEW VERSION: more macros, using the IMU for more accurate rotations, make the NewUpdateArm code cleaner
-// TODO NEW VERSION: tweak precision mode to activate on more criteria (less often)
 
 @TeleOp()
 public class Manual_Macro extends OpMode {
@@ -63,8 +62,8 @@ public class Manual_Macro extends OpMode {
     private static final String ARM_MOTOR = "armMotor";
     private static final String HUB_IMU = "imu";
 
-    private static final double CLAW_CLOSE = 0.6;
-    private static final double CLAW_OPEN = 0.43;
+    private static final double CLAW_CLOSE = 0.5;
+    private static final double CLAW_OPEN = 0.3;
 
     private static final int MAX_ARM_HEIGHT = 4050;
     private static final int MIN_ARM_HEIGHT = 0;
@@ -214,7 +213,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
-                EncoderMove(0.5, 0.6, 0.6, 5); // TODO: should be the length of the arm and front of robot
+                EncoderMove(0.3, 0.6, 0.6, 5); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
@@ -239,15 +238,15 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.4, -0.4, 3); // move back for clearance TODO: move back, tune timeout
+                EncoderMove(0.85, -0.25, -0.25, 3); // move back for clearance TODO: move back, tune timeout
 
                 Delay(250);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.5, -2.3 * direction, 2.3 * direction, 4);
-                EncoderMove(0.4, 0.8, 0.8, 5); // move forward to line up
+                EncoderMove(0.5, -2.1 * direction, 2.1 * direction, 4);
+                //EncoderMove(0.4, 0.8, 0.8, 5); // move forward to line up
 
                 adjustmentAllowed = true;
             }
@@ -257,17 +256,24 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(0.8, 0.4, 0.4, 3);
+                EncoderMove(0.8, 0.4, 0.4, 5);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
 
-                EncoderMove(0.8, 0.7, -0.7, 3);
+                Delay(300);
+
+                targetArmPosition = JUNCTION_MID;
+                NewUpdateArm(false);
+
+                EncoderMove(0.8, 2.7, -2.7, 10);
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
-                EncoderMove(0.8, 1.5, 1.5, 3);
+                Delay(300);
+
+                EncoderMove(0.8, 1.1, 1.1, 5);
 
                 adjustmentAllowed = true;
             }
@@ -280,12 +286,12 @@ public class Manual_Macro extends OpMode {
 
                 Delay(200);
 
-                EncoderMove(0.9, -1.3, -1.3, 3);
+                EncoderMove(0.9, -0.6, -0.6, 3);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.8, -0.7, 0.7, 3);
+                EncoderMove(0.8, -2.7, 2.7, 3);
 
                 adjustmentAllowed = true;
             }
@@ -335,18 +341,21 @@ public class Manual_Macro extends OpMode {
 
     private double GetHeading() {
         double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-        double deltaHeading = currentHeading - previousHeading;
+        return (double)(Math.round(-currentHeading + 720) % 360);
 
-        if (deltaHeading < -180) {
-            deltaHeading += 360;
+        /*if (deltaHeading < -180) {
+            //deltaHeading += 360;
+            deltaHeading += 0;
         } else if (deltaHeading >= 180) {
-            deltaHeading -= 360;
+            //deltaHeading -= 360;
+            deltaHeading -= 0;
+        }*/
+
+        /*if (currentHeading < 0) {
+            currentHeading = (currentHeading % 360) + 360; // Bring negative angle into the positive range
         }
 
-        integratedHeading += deltaHeading;
-        previousHeading = currentHeading;
-
-        return integratedHeading;
+        double convertedAngle = (currentHeading + 90) % 360;*/
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
@@ -462,15 +471,16 @@ public class Manual_Macro extends OpMode {
             targetArmPosition = 30;
             armRuntime.reset();
 
-            while (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+            // this while loop is blocking, therefore we don't use it
+            /*while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
                 armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
 
-                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
                     break;
                 }
-            }
+            }*/
 
-            if (armM.getCurrentPosition() <= 50) {
+            if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
                 armM.setVelocity(0);
             }
 
@@ -571,6 +581,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
         telemetry.addData("IMU Yaw: ", GetHeading());
+        telemetry.addData("Servo Position: ", claw.getPosition());
 
         /*telemetry.addData("FrontRM Encoder Value: ", frontRM.getCurrentPosition());
         telemetry.addData("FrontLM Encoder Value: ", frontLM.getCurrentPosition());

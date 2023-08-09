@@ -117,6 +117,14 @@ public class PolesPipeline extends OpenCvPipeline {
         return destArr;
     }
 
+    private Point[] MatToPoints(Mat m) {
+        Point[] tmpArr = new Point[m.rows()];
+        for (int i = 0; i < m.rows(); i++) {
+            tmpArr[i] = new Point(m.get(i, 0), m.get(i, 1))
+        }
+        return tmpArr;
+    }
+
     private double [] oldPos = START_POS;
     private Mat oldMat = TranslationMatrix(START_POS);
     private Mat mapImg = Mat.zeros(new int[] {MAP_SIZE, MAP_SIZE, 3}, CvType.CV_8U);
@@ -228,6 +236,8 @@ public class PolesPipeline extends OpenCvPipeline {
                     // Goes in order, base, left, right, centre
                     Imgproc.warpPerspective(featurePlane, warpedFeatures, perspMat, new Size(X, yf));
 
+                    Point[] warpedPoints = MatToPoints(warpedFeatures);
+
                     Point relPos = new Point((warpedFeatures.get(0, 0)[0] - X / 2) / GRID_SIZE,
                             (warpedFeatures.get(0, 1)[0] - yf) / GRID_SIZE);
 
@@ -238,10 +248,17 @@ public class PolesPipeline extends OpenCvPipeline {
                     newPts.add(newPt);
 
                     Imgproc.line(input, base, centre, BLUE, 1);
+                    Imgproc.line(warpedImg, warpedPoints[0], warpedPoints[3], BLUE, 1);
                     // Continue from there
+                    Imgproc.line(input, left, right, BLUE, 1);
+                    Imgproc.line(warpedImg, warpedPoints[1], warpedPoints[2], BLUE, 1);
 
                     featurePlane.release();
                     warpedFeatures.release();
+                }
+                if (newPts.length > 1) {
+                    // Do stuff
+                    
                 }
             }
             srcPlane.release();
