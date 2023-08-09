@@ -398,7 +398,7 @@ public class Manual_Macro extends OpMode {
 
             double margin = absoluteTargetRot - GetHeading();
             double dir = IsPositive(margin) ? 1 : -1;
-            while ((encoderRuntime.seconds() <= safetyTimeout) || (Math.abs(margin) > 3)) {
+            while ((encoderRuntime.seconds() <= safetyTimeout) && (Math.abs(margin) >= 10)) {
                 backLM.setPower(power * dir); // TODO: might have to tune this with negatives to account for motor directions
                 frontLM.setPower(power * dir);
                 backRM.setPower(-power * dir);
@@ -406,6 +406,11 @@ public class Manual_Macro extends OpMode {
 
                 margin = absoluteTargetRot - GetHeading();
             }
+
+            backLM.setPower(0);
+            frontLM.setPower(0);
+            backRM.setPower(0);
+            frontRM.setPower(0);
 
             backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
