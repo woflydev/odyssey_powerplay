@@ -16,7 +16,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
-// TODO NEW VERSION: more macros, using the IMU for more accurate rotations, make the NewUpdateArm code cleaner
+// TODO THURSDAY TEST: test new accurate IMU turning algorithm
 
 @TeleOp()
 public class Manual_Macro extends OpMode {
@@ -46,9 +46,6 @@ public class Manual_Macro extends OpMode {
 
     private boolean scoringBehaviourRight = false; // turns left on score macro
     private boolean fieldCentricRed = true;
-
-    private double previousHeading = 0; // for turning with the imu
-    private double integratedHeading = 0;
 
     private static final boolean fieldCentricDrive = true;
 
@@ -225,8 +222,9 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300);
 
-                EncoderMove(0.5, -1.3, -1.3, 4); // TODO: tune this to clear cone stack
-                EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4);
+                EncoderMove(0.5, -1.2, -1.2, 4);
+                //EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4); // TODO: OLD CODE FOR TURNING. TESTING IMU TURNING WITH ENCODERTRANSFORM
+                EncoderTransform(0.8, 0, 0, true, 320, 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -238,15 +236,15 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.25, -0.25, 3); // move back for clearance TODO: move back, tune timeout
+                EncoderMove(0.85, -0.23, -0.23, 3); // move back for clearance
 
                 Delay(250);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.5, -2.1 * direction, 2.1 * direction, 4);
-                //EncoderMove(0.4, 0.8, 0.8, 5); // move forward to line up
+                //EncoderMove(0.5, -2.1 * direction, 2.1 * direction, 4);
+                EncoderTransform(0.8, 0, 0, true, 90, 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -266,7 +264,8 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_MID;
                 NewUpdateArm(false);
 
-                EncoderMove(0.8, 2.7, -2.7, 10);
+                //EncoderMove(0.8, 2.7, -2.7, 10);
+                EncoderTransform(0.8, 0, 0, true, 359, 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
@@ -291,7 +290,8 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
-                EncoderMove(0.8, -2.7, 2.7, 3);
+                //EncoderMove(0.8, -2.7, 2.7, 3);
+                EncoderTransform(0.8, 0, 0, true, 180, 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -330,6 +330,8 @@ public class Manual_Macro extends OpMode {
 
     // -------------------------------------------------------------- USER FUNCTIONS
 
+    public static boolean IsPositive(double d) { return !(Double.compare(d, 0.0) < 0); }
+
     private void Delay(double time) {
         try { sleep((long)time); } catch (Exception e) { System.out.println("interrupted"); }
     }
@@ -342,20 +344,6 @@ public class Manual_Macro extends OpMode {
     private double GetHeading() {
         double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
         return (double)(Math.round(-currentHeading + 720) % 360);
-
-        /*if (deltaHeading < -180) {
-            //deltaHeading += 360;
-            deltaHeading += 0;
-        } else if (deltaHeading >= 180) {
-            //deltaHeading -= 360;
-            deltaHeading -= 0;
-        }*/
-
-        /*if (currentHeading < 0) {
-            currentHeading = (currentHeading % 360) + 360; // Bring negative angle into the positive range
-        }
-
-        double convertedAngle = (currentHeading + 90) % 360;*/
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
@@ -400,7 +388,7 @@ public class Manual_Macro extends OpMode {
     }
 
     private void EncoderTransform(double power, double left, double right, boolean useIMU, double absoluteTargetRot, double safetyTimeout) {
-        if (useIMU) {
+        if (useIMU) { // use the IMU for accurate rotations
             backLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontLM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -409,8 +397,8 @@ public class Manual_Macro extends OpMode {
             encoderRuntime.reset();
 
             double margin = absoluteTargetRot - GetHeading();
-            double dir = (absoluteTargetRot - GetHeading()) >= 180 ? 1 : -1;
-            while ((encoderRuntime.seconds() <= safetyTimeout) && (Math.abs(margin) > 4)) {
+            double dir = IsPositive(margin) ? 1 : -1;
+            while ((encoderRuntime.seconds() <= safetyTimeout) || (Math.abs(margin) > 3)) {
                 backLM.setPower(power * dir); // TODO: might have to tune this with negatives to account for motor directions
                 frontLM.setPower(power * dir);
                 backRM.setPower(-power * dir);
@@ -418,6 +406,11 @@ public class Manual_Macro extends OpMode {
 
                 margin = absoluteTargetRot - GetHeading();
             }
+
+            backLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         }
 
         else {
