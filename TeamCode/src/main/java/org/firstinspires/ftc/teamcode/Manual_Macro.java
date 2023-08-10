@@ -405,6 +405,9 @@ public class Manual_Macro extends OpMode {
                 frontRM.setPower(-power * dir);
 
                 margin = absoluteTargetRot - GetHeading();
+
+                telemetry.addData("Current Rotation: ", GetHeading());
+                telemetry.update();
             }
 
             backLM.setPower(0);
