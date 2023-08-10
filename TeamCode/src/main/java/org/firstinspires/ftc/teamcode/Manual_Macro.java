@@ -44,7 +44,7 @@ public class Manual_Macro extends OpMode {
 
     private boolean adjustmentAllowed = true;
 
-    private boolean scoringBehaviourRight = false; // turns left on score macro
+    private boolean scoringBehaviourRight = true; // turns left on score macro
     private boolean fieldCentricRed = true;
 
     private static final boolean fieldCentricDrive = true;
@@ -205,12 +205,13 @@ public class Manual_Macro extends OpMode {
 
     private void Macros() {
         int direction = scoringBehaviourRight ? 1 : -1;
+        int full = scoringBehaviourRight ? 0 : 360;
 
         if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
-                EncoderMove(0.3, 0.6, 0.6, 5); // TODO: should be the length of the arm and front of robot
+                EncoderMove(0.3, 0.4, 0.4, 3); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
@@ -222,9 +223,9 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300);
 
-                EncoderMove(0.5, -1.2, -1.2, 4);
+                EncoderMove(0.5, -1.4, -1.4, 4);
                 //EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4); // TODO: OLD CODE FOR TURNING. TESTING IMU TURNING WITH ENCODERTRANSFORM
-                EncoderTransform(0.8, 0, 0, true, 320, 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(335), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -236,7 +237,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.23, -0.23, 3); // move back for clearance
+                EncoderMove(0.85, -0.27, -0.27, 3); // move back for clearance
 
                 Delay(250);
 
@@ -244,7 +245,7 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.5, -2.1 * direction, 2.1 * direction, 4);
-                EncoderTransform(0.8, 0, 0, true, 90, 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(80), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -265,7 +266,7 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(false);
 
                 //EncoderMove(0.8, 2.7, -2.7, 10);
-                EncoderTransform(0.8, 0, 0, true, 359, 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(335), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
@@ -291,7 +292,7 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.8, -2.7, 2.7, 3);
-                EncoderTransform(0.8, 0, 0, true, 180, 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(220), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -304,7 +305,7 @@ public class Manual_Macro extends OpMode {
             clawOpen = true;
 
             EncoderMove(0.5, 0.1, 0.1, 3);
-            EncoderMove(0.5, -0.5 * direction, -.5 * direction, 3);
+            EncoderMove(0.5, -0.5 * direction, -0.5 * direction, 3);
             EncoderMove(0.5, 0.6, 0.6, 4);
         }
 
@@ -332,6 +333,11 @@ public class Manual_Macro extends OpMode {
 
     public static boolean IsPositive(double d) { return !(Double.compare(d, 0.0) < 0); }
 
+    public double AlternateSide(double initialRotation) {
+        double full = scoringBehaviourRight ? 0 : 360;
+        return Math.abs(full - initialRotation);
+    }
+
     private void Delay(double time) {
         try { sleep((long)time); } catch (Exception e) { System.out.println("interrupted"); }
     }
@@ -343,7 +349,9 @@ public class Manual_Macro extends OpMode {
 
     private double GetHeading() {
         double currentHeading = imu.getRobotOrientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES).thirdAngle;
-        return (double)(Math.round(-currentHeading + 720) % 360);
+        double rot = (double)(Math.round(-currentHeading + 720) % 360);
+        rot = rot == 0 ? 360 : rot;
+        return rot;
     }
 
     private void EncoderMove(double power, double left, double right, double safetyTimeout) {
@@ -394,17 +402,25 @@ public class Manual_Macro extends OpMode {
             backRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             frontRM.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+            // if this floats, will overshoot
+            backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+            frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
             encoderRuntime.reset();
 
-            double margin = absoluteTargetRot - GetHeading();
-            double dir = IsPositive(margin) ? 1 : -1;
-            while ((encoderRuntime.seconds() <= safetyTimeout) && (Math.abs(margin) >= 10)) {
+            while (encoderRuntime.seconds() <= safetyTimeout) {
+                // funni kelvin code fixed robot spazz
+                double margin = (absoluteTargetRot - GetHeading() + 360 * 10) % 360;
+                double dir = (margin > 180) ? 1 : -1;
+
+                if (Math.abs(margin) <= 5) break;
+
                 backLM.setPower(power * dir); // TODO: might have to tune this with negatives to account for motor directions
                 frontLM.setPower(power * dir);
                 backRM.setPower(-power * dir);
                 frontRM.setPower(-power * dir);
-
-                margin = absoluteTargetRot - GetHeading();
 
                 telemetry.clear();
                 telemetry.addData("Current Rotation: ", GetHeading());
@@ -420,6 +436,11 @@ public class Manual_Macro extends OpMode {
             frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+            frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
         }
 
         else {
