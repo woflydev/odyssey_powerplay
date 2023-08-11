@@ -71,7 +71,7 @@ public class Manual_Macro extends OpMode {
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
     private static final double BASE_DRIVE_SPEED_MODIFIER = 1.5; // higher = less speed
-    private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3;
+    private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3.35;
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
 
@@ -255,7 +255,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(0.8, 0.4, 0.4, 5);
+                EncoderMove(0.8, 0.4, 0.4, 3);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
@@ -265,15 +265,16 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_MID;
                 NewUpdateArm(false);
 
+                EncoderMove(0.8, -0.4, -0.4, 5);
                 //EncoderMove(0.8, 2.7, -2.7, 10);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(335), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
                 Delay(300);
 
-                EncoderMove(0.8, 1.1, 1.1, 5);
+                EncoderMove(0.8, 0.7, 0.7, 3);
 
                 adjustmentAllowed = true;
             }
@@ -292,21 +293,38 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.8, -2.7, 2.7, 3);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(220), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(205), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
         }
 
-        else if (gamepad1.dpad_left && gamepad1.x) {
+        else if (gamepad1.dpad_left && gamepad1.x) { // macro for substation opening
             adjustmentAllowed = false;
 
             claw.setPosition(CLAW_OPEN);
             clawOpen = true;
 
+            //EncoderMove(0.5, 0.1, 0.1, 3);
             EncoderMove(0.5, 0.1, 0.1, 3);
-            EncoderMove(0.5, -0.5 * direction, -0.5 * direction, 3);
-            EncoderMove(0.5, 0.6, 0.6, 4);
+            EncoderTransform(0.8, 0, 0, true, 295, 3); // no need to use alternateSide since relativev
+            //EncoderMove(0.5, -0.5 * direction, -0.5 * direction, 3);
+            EncoderMove(0.5, 1.6, 1.6, 3);
+
+            claw.setPosition(CLAW_CLOSE);
+            clawOpen = false;
+
+            Delay(300);
+
+            //EncoderMove(0.5, 0.3, 0.3, 3);
+
+            targetArmPosition = JUNCTION_HIGH;
+            NewUpdateArm(false);
+
+            EncoderTransform(0.8, 0, 0, true, AlternateSide(341), 3);
+            EncoderMove(0.8, 1, 1, 3);
+
+            adjustmentAllowed = true;
         }
 
         else if (gamepad1.right_bumper || gamepad2.right_bumper) { // manual close and open
@@ -370,6 +388,11 @@ public class Manual_Macro extends OpMode {
         backRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         frontRM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
+        backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         encoderRuntime.reset();
         backLM.setPower(Math.abs(power));
         frontLM.setPower(Math.abs(power));
@@ -391,6 +414,11 @@ public class Manual_Macro extends OpMode {
         frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        backRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        frontRM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
 
         Delay(50);
     }
@@ -421,6 +449,9 @@ public class Manual_Macro extends OpMode {
                 frontLM.setPower(power * dir);
                 backRM.setPower(-power * dir);
                 frontRM.setPower(-power * dir);
+
+                margin = (absoluteTargetRot - GetHeading() + 360 * 10) % 360;
+                if (Math.abs(margin) <= 5) break;
 
                 telemetry.clear();
                 telemetry.addData("Current Rotation: ", GetHeading());
@@ -599,7 +630,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Current Arm Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Adjustment Allowed: ", adjustmentAllowed);
-        telemetry.addData("Score Behaviour: ", scoringBehaviourRight ? "LEFT" : "RIGHT");
+        telemetry.addData("Score Behaviour: ", scoringBehaviourRight ? "RIGHT" : "LEFT");
         telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
