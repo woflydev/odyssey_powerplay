@@ -92,7 +92,6 @@ public class Manual_Macro extends OpMode {
         double backRightPower;
 
         if (fieldCentricDrive) {
-            // FIELD CENTRIC DRIVE REQUIRES RIGHT MOTORS TO BE REVERSED!!
             double yAxis;
             double xAxis;
             double rotateAxis;
@@ -207,11 +206,11 @@ public class Manual_Macro extends OpMode {
         int direction = scoringBehaviourRight ? 1 : -1;
         int full = scoringBehaviourRight ? 0 : 360;
 
-        if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
+        if ((gamepad1.b && gamepad1.left_bumper) || (gamepad2.b && gamepad2.left_bumper)) {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
-                EncoderMove(0.3, 0.4, 0.4, 3); // TODO: should be the length of the arm and front of robot
+                EncoderMove(0.3, 0.2, 0.2, 2); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
@@ -225,7 +224,7 @@ public class Manual_Macro extends OpMode {
 
                 EncoderMove(0.5, -1.4, -1.4, 4);
                 //EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4); // TODO: OLD CODE FOR TURNING. TESTING IMU TURNING WITH ENCODERTRANSFORM
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(335), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -245,13 +244,13 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.5, -2.1 * direction, 2.1 * direction, 4);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(80), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(75), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
         }
 
-        else if ((gamepad1.b && gamepad1.left_bumper) || (gamepad2.b && gamepad2.left_bumper)) {
+        else if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
@@ -306,8 +305,8 @@ public class Manual_Macro extends OpMode {
             clawOpen = true;
 
             //EncoderMove(0.5, 0.1, 0.1, 3);
-            EncoderMove(0.5, 0.1, 0.1, 3);
-            EncoderTransform(0.8, 0, 0, true, 295, 3); // no need to use alternateSide since relativev
+            EncoderMove(0.5, 0.2, 0.2, 3);
+            EncoderTransform(0.8, 0, 0, true, 293, 3); // no need to use alternateSide since relativev
             //EncoderMove(0.5, -0.5 * direction, -0.5 * direction, 3);
             EncoderMove(0.5, 1.6, 1.6, 3);
 
