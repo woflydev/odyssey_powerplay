@@ -31,6 +31,7 @@ public class Manual_Macro extends OpMode {
 
     private final ElapsedTime encoderRuntime = new ElapsedTime();
     private final ElapsedTime armRuntime = new ElapsedTime();
+    private final ElapsedTime resetTimer = new ElapsedTime();
 
     private int targetArmPosition = 0;
     private boolean clawOpen = true;
@@ -81,7 +82,7 @@ public class Manual_Macro extends OpMode {
     private static final int JUNCTION_LOW = 1650;
     private static final int JUNCTION_MID = 2700;
     private static final int JUNCTION_STANDBY = 3200;
-    private static final int JUNCTION_HIGH = 4100;
+    private static final int JUNCTION_HIGH = 4000;
 
     // -------------------------------------------------------------- ROBOT OPERATION
 
@@ -215,12 +216,12 @@ public class Manual_Macro extends OpMode {
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
 
-                Delay(200); // claw needs time
+                Delay(300); // claw needs time
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
-                Delay(300);
+                //Delay(300);
 
                 EncoderMove(0.5, -1.4, -1.4, 4);
                 //EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4); // TODO: OLD CODE FOR TURNING. TESTING IMU TURNING WITH ENCODERTRANSFORM
@@ -254,7 +255,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(0.8, 0.4, 0.4, 3);
+                EncoderMove(1, 0.4, 0.4, 3);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
@@ -264,16 +265,16 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_MID;
                 NewUpdateArm(false);
 
-                EncoderMove(0.8, -0.4, -0.4, 5);
+                EncoderMove(1, -0.4, -0.4, 5);
                 //EncoderMove(0.8, 2.7, -2.7, 10);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(342), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
                 Delay(300);
 
-                EncoderMove(0.8, 0.7, 0.7, 3);
+                EncoderMove(1, 0.7, 0.7, 3);
 
                 adjustmentAllowed = true;
             }
@@ -286,13 +287,13 @@ public class Manual_Macro extends OpMode {
 
                 Delay(200);
 
-                EncoderMove(0.9, -0.6, -0.6, 3);
+                EncoderMove(1, -0.6, -0.6, 3);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
 
                 //EncoderMove(0.8, -2.7, 2.7, 3);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(205), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(1, 0, 0, true, AlternateSide(200), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -546,6 +547,13 @@ public class Manual_Macro extends OpMode {
         }
     }
 
+    private void PassiveArmResetCheck() {
+        if (armM.getCurrentPosition() <= 50 && targetArmPosition <= 50) {
+            armM.setVelocity(0);
+            resetTimer.reset();
+        }
+    }
+
     // -------------------------------------------------------------- MAIN INIT & LOOP
 
     public void init() {
@@ -621,6 +629,7 @@ public class Manual_Macro extends OpMode {
 
         Macros();
         RuntimeConfig();
+        PassiveArmResetCheck();
         Mecanum();
 
         // -------------------------------------------------------------- TELEMETRY
