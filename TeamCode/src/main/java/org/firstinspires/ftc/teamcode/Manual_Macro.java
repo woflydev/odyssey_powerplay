@@ -213,7 +213,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
-                EncoderMove(0.3, 0.2, 0.2, 2); // TODO: should be the length of the arm and front of robot
+                EncoderMove(0.3, 0.2, 0.2, false, false, 2); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
@@ -225,7 +225,7 @@ public class Manual_Macro extends OpMode {
 
                 //Delay(300);
 
-                EncoderMove(0.5, -1.4, -1.4, 4);
+                EncoderMove(0.5, -1.4, -1.4, false, false,4);
                 //EncoderMove(0.5, 1.9 * direction, -1.9 * direction, 4); // TODO: OLD CODE FOR TURNING. TESTING IMU TURNING WITH ENCODERTRANSFORM
                 EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
@@ -239,7 +239,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300); // need time to drop
 
-                EncoderMove(0.85, -0.27, -0.27, 3); // move back for clearance
+                EncoderMove(0.85, -0.27, -0.27, false, false, 3); // move back for clearance
 
                 Delay(250);
 
@@ -253,11 +253,12 @@ public class Manual_Macro extends OpMode {
             }
         }
 
+        // macro for substation to rear high pole
         else if ((gamepad1.a && gamepad1.left_bumper) || (gamepad2.a && gamepad2.left_bumper)) {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(1, 0.4, 0.4, 3);
+                EncoderMove(1, 0.4, 0.4, false, false, 3);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
@@ -267,7 +268,7 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_MID;
                 NewUpdateArm(false);
 
-                EncoderMove(1, -0.4, -0.4, 5);
+                EncoderMove(1, -0.4, -0.4, false, false, 5);
                 //EncoderMove(0.8, 2.7, -2.7, 10);
                 EncoderTransform(0.8, 0, 0, true, AlternateSide(342), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
@@ -276,7 +277,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(300);
 
-                EncoderMove(1, 0.7, 0.7, 3);
+                EncoderMove(1, 0.7, 0.7, false, false, 3);
 
                 adjustmentAllowed = true;
             }
@@ -289,7 +290,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(200);
 
-                EncoderMove(1, -0.6, -0.6, 3);
+                EncoderMove(1, -0.6, -0.6, false, false,  3);
 
                 targetArmPosition = JUNCTION_OFF;
                 NewUpdateArm(true);
@@ -306,7 +307,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) {
                 adjustmentAllowed = false;
 
-                EncoderMove(1, 0.4, 0.4, 3);
+                EncoderMove(1, 0.4, 0.4, false, false, 3);
 
                 claw.setPosition(CLAW_CLOSE);
                 clawOpen = false;
@@ -316,9 +317,9 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_LOW;
                 NewUpdateArm(false);
 
-                EncoderMove(1, -0.43, -0.43, 3);
+                EncoderMove(1, -0.43, -0.43, false, false, 3);
                 EncoderTransform(0.8, 0, 0, true, AlternateSide(75), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
-                EncoderMove(0.5, 0.2, 0.2, 3);
+                EncoderMove(0.5, 0.2, 0.2, false, false, 3);
 
                 adjustmentAllowed = true;
             }
@@ -331,7 +332,7 @@ public class Manual_Macro extends OpMode {
 
                 Delay(200);
 
-                EncoderMove(0.5, 0.2, 0.2, 3);
+                EncoderMove(0.5, 0.2, 0.2, false, false, 3);
                 EncoderTransform(0.8, 0, 0, true, AlternateSide(205), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
@@ -345,10 +346,10 @@ public class Manual_Macro extends OpMode {
             clawOpen = true;
 
             //EncoderMove(0.5, 0.1, 0.1, 3);
-            EncoderMove(0.5, 0.2, 0.2, 3);
+            EncoderMove(0.5, 0.2, 0.2, false, false, 3);
             EncoderTransform(0.8, 0, 0, true, 293, 3); // no need to use alternateSide since relativev
             //EncoderMove(0.5, -0.5 * direction, -0.5 * direction, 3);
-            EncoderMove(0.5, 1.6, 1.6, 3);
+            EncoderMove(0.5, 1.6, 1.6, false, false, 3);
 
             claw.setPosition(CLAW_CLOSE);
             clawOpen = false;
@@ -361,7 +362,7 @@ public class Manual_Macro extends OpMode {
             NewUpdateArm(false);
 
             EncoderTransform(0.8, 0, 0, true, AlternateSide(341), 3);
-            EncoderMove(0.8, 1, 1, 3);
+            EncoderMove(0.8, 1, 1, false, false, 3);
 
             adjustmentAllowed = true;
         }
@@ -411,11 +412,27 @@ public class Manual_Macro extends OpMode {
         return rot;
     }
 
-    private void EncoderMove(double power, double left, double right, double safetyTimeout) {
-        int backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
-        int frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
-        int backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
-        int frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
+    private void EncoderMove(double power, double left, double right, boolean strafe, boolean strafeRight, double safetyTimeout) {
+
+        int backLMTarget;
+        int frontLMTarget;
+        int backRMTarget;
+        int frontRMTarget;
+
+        if (!strafe) {
+            backLMTarget = backLM.getCurrentPosition() - (int)(left * PPR);
+            frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR);
+            backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR);
+            frontRMTarget = frontRM.getCurrentPosition() - (int)(right * PPR);
+        }
+
+        else {
+            int dir = strafeRight ? 1 : -1;
+            backLMTarget = backLM.getCurrentPosition() + (int)(left * PPR * dir);
+            frontLMTarget = frontLM.getCurrentPosition() - (int)(left * PPR * dir);
+            backRMTarget = backRM.getCurrentPosition() - (int)(right * PPR * dir);
+            frontRMTarget = frontRM.getCurrentPosition() + (int)(right * PPR * dir);
+        }
 
         backLM.setTargetPosition(backLMTarget);
         frontLM.setTargetPosition(frontLMTarget);
