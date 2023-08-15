@@ -293,7 +293,21 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.8, -2.7, 2.7, 3);
-                EncoderTransform(1, 0, 0, true, AlternateSide(200), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(1, 0, 0, true, AlternateSide(205), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+
+                adjustmentAllowed = true;
+            }
+        }
+
+        else if ((gamepad1.x && gamepad1.left_bumper) || (gamepad2.x && gamepad2.left_bumper)) {
+            if (clawOpen) {
+                adjustmentAllowed = false;
+
+                adjustmentAllowed = true;
+            }
+
+            else {
+                adjustmentAllowed = false;
 
                 adjustmentAllowed = true;
             }
@@ -400,6 +414,8 @@ public class Manual_Macro extends OpMode {
         frontRM.setPower(Math.abs(power));
 
         while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
+            if (gamepad1.left_bumper || gamepad2.left_bumper) break;
+
             telemetry.clear();
             telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
             telemetry.update();
@@ -439,13 +455,15 @@ public class Manual_Macro extends OpMode {
             encoderRuntime.reset();
 
             while (encoderRuntime.seconds() <= safetyTimeout) {
-                // funni kelvin code fixed robot spazz
+                if (gamepad1.left_bumper || gamepad2.left_bumper) break;
+
+                // funny kelvin code fixed spastic robot
                 double margin = (absoluteTargetRot - GetHeading() + 360 * 10) % 360;
                 double dir = (margin > 180) ? 1 : -1;
 
                 if (Math.abs(margin) <= 5) break;
 
-                backLM.setPower(power * dir); // TODO: might have to tune this with negatives to account for motor directions
+                backLM.setPower(power * dir);
                 frontLM.setPower(power * dir);
                 backRM.setPower(-power * dir);
                 frontRM.setPower(-power * dir);
@@ -467,6 +485,8 @@ public class Manual_Macro extends OpMode {
             frontLM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             backRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             frontRM.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+            Delay(55);
 
             backLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
             frontLM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -498,6 +518,8 @@ public class Manual_Macro extends OpMode {
             frontRM.setPower(Math.abs(power));
 
             while ((encoderRuntime.seconds() <= safetyTimeout) && (backRM.isBusy() && backLM.isBusy())) {
+                if (gamepad1.left_bumper || gamepad2.left_bumper) break;
+
                 telemetry.clear();
                 telemetry.addData("CURRENT COORDINATE: ",  "%7d :%7d", backLM.getCurrentPosition(), backRM.getCurrentPosition());
                 telemetry.update();
