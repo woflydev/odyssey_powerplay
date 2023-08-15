@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
-import android.text.style.UpdateAppearance;
-
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -18,10 +16,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
-// TODO THURSDAY TEST: test new accurate IMU turning algorithm
+// TODO: WORKING - TWO BASE MACROS AND OPENING SUBSTATION MACRO (although opening macro might need some tuning on the first turn)
 
 @TeleOp()
-public class Manual_Macro extends OpMode {
+public class SP3_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
