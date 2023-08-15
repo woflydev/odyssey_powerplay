@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
+import android.text.style.UpdateAppearance;
+
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -299,15 +301,38 @@ public class Manual_Macro extends OpMode {
             }
         }
 
+        // low mid junctions near substation
         else if ((gamepad1.x && gamepad1.left_bumper) || (gamepad2.x && gamepad2.left_bumper)) {
             if (clawOpen) {
                 adjustmentAllowed = false;
+
+                EncoderMove(1, 0.4, 0.4, 3);
+
+                claw.setPosition(CLAW_CLOSE);
+                clawOpen = false;
+
+                Delay(300);
+
+                targetArmPosition = JUNCTION_LOW;
+                NewUpdateArm(false);
+
+                EncoderMove(1, -0.43, -0.43, 3);
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(75), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderMove(0.5, 0.2, 0.2, 3);
 
                 adjustmentAllowed = true;
             }
 
             else {
                 adjustmentAllowed = false;
+
+                claw.setPosition(CLAW_OPEN);
+                clawOpen = true;
+
+                Delay(200);
+
+                EncoderMove(0.5, 0.2, 0.2, 3);
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(205), 4); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
