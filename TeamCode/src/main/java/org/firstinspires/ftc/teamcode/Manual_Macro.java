@@ -174,12 +174,12 @@ public class Manual_Macro extends OpMode {
         // -------------------------------------------------------------- CONFIGURATION (don't directly move the bot)
 
         if (gamepad1.dpad_left) { // goes left on macro
-            scoringBehaviourRight = true;
+            scoringBehaviourRight = false;
             Delay(50);
         }
 
         else if (gamepad1.dpad_right) { // goes right on macro
-            scoringBehaviourRight = false;
+            scoringBehaviourRight = true;
             Delay(50);
         }
 
@@ -703,7 +703,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Adjustment Allowed: ", adjustmentAllowed);
         telemetry.addData("Score Behaviour: ", scoringBehaviourRight ? "RIGHT" : "LEFT");
-        telemetry.addData("Current Alliance Mode : ", fieldCentricRed ? "RED" : "BLUE");
+        telemetry.addData("Field Centric Mode : ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
         telemetry.addData("IMU Yaw: ", GetHeading());
