@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
-import android.text.style.UpdateAppearance;
-
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -21,7 +19,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 // TODO THURSDAY TEST: test new accurate IMU turning algorithm
 
 @TeleOp()
-public class Manual_Macro extends OpMode {
+public class SHOWCASE_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
@@ -215,7 +213,7 @@ public class Manual_Macro extends OpMode {
             if (clawOpen) { // obtain cone
                 adjustmentAllowed = false;
 
-                EncoderMove(0.3, 0.2, 0.2, false, false, 2); // TODO: should be the length of the arm and front of robot
+                EncoderMove(1, 0.15, 0.15, false, false, 2); // TODO: should be the length of the arm and front of robot
 
                 claw.setPosition(CLAW_CLOSE); // close
                 clawOpen = false;
@@ -271,16 +269,16 @@ public class Manual_Macro extends OpMode {
                 targetArmPosition = JUNCTION_MID;
                 NewUpdateArm(false);
 
-                EncoderMove(1, -0.4, -0.4, false, false, 5);
+                //EncoderMove(1, -0.4, -0.4, false, false, 5);
                 //EncoderMove(0.8, 2.7, -2.7, 10);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(335), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
 
                 Delay(300);
 
-                EncoderMove(1, 0.7, 0.7, false, false, 3);
+                EncoderMove(1, 1.1, 1.1, false, false, 3);
 
                 adjustmentAllowed = true;
             }
