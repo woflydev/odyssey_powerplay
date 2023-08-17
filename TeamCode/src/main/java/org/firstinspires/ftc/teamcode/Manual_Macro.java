@@ -656,6 +656,7 @@ public class Manual_Macro extends OpMode {
 
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
         armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armM.setDirection(DcMotorSimple.Direction.REVERSE);
         armM.setTargetPosition(0);
         armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);

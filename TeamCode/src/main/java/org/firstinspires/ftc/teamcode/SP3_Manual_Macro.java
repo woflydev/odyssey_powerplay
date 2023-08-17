@@ -653,6 +653,7 @@ public class SP3_Manual_Macro extends OpMode {
         backRM.setDirection(DcMotorSimple.Direction.REVERSE);
 
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
+        armM.setDirection(DcMotorSimple.Direction.REVERSE);
         armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armM.setTargetPosition(0);
         armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
