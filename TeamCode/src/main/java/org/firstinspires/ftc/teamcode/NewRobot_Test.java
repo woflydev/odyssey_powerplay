@@ -654,7 +654,7 @@ public class NewRobot_Test extends OpMode {
 
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
         armM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // change back to pos
-        armM.setDirection(DcMotorSimple.Direction.REVERSE);
+        armM.setDirection(DcMotorSimple.Direction.FORWARD);
         //armM.setTargetPosition(0);
         //armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -719,7 +719,7 @@ public class NewRobot_Test extends OpMode {
         // -------------------------------------------------------------- TELEMETRY
 
         //telemetry.addData("Claw Open: ", clawOpen);
-        //telemetry.addData("Current Arm Position: ", armM.getCurrentPosition());
+        telemetry.addData("Current Arm Position: ", armM.getCurrentPosition());
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Adjustment Allowed: ", adjustmentAllowed);
         telemetry.addData("Score Behaviour: ", scoringBehaviourRight ? "RIGHT" : "LEFT");
