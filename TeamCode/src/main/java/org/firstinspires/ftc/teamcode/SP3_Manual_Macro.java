@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Thread.sleep;
 
-import android.text.style.UpdateAppearance;
-
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -18,10 +16,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 
-// TODO THURSDAY TEST: test new accurate IMU turning algorithm
+// TODO: WORKING - TWO BASE MACROS AND OPENING SUBSTATION MACRO (although opening macro might need some tuning on the first turn)
 
 @TeleOp()
-public class Manual_Macro extends OpMode {
+public class SP3_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
@@ -74,7 +72,7 @@ public class Manual_Macro extends OpMode {
     private static final int ARM_RESET_TIMEOUT = 3;
 
     private static final double MAX_ACCELERATION_DEVIATION = 0.3; // higher = less smoothing
-    private static final double BASE_DRIVE_SPEED_MODIFIER = 1.2; // higher = less speed
+    private static final double BASE_DRIVE_SPEED_MODIFIER = 1.5; // higher = less speed
     private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3.35;
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
@@ -174,12 +172,12 @@ public class Manual_Macro extends OpMode {
         // -------------------------------------------------------------- CONFIGURATION (don't directly move the bot)
 
         if (gamepad1.dpad_left) { // goes left on macro
-            scoringBehaviourRight = false;
+            scoringBehaviourRight = true;
             Delay(50);
         }
 
         else if (gamepad1.dpad_right) { // goes right on macro
-            scoringBehaviourRight = true;
+            scoringBehaviourRight = false;
             Delay(50);
         }
 
@@ -273,7 +271,7 @@ public class Manual_Macro extends OpMode {
 
                 EncoderMove(1, -0.4, -0.4, false, false, 5);
                 //EncoderMove(0.8, 2.7, -2.7, 10);
-                EncoderTransform(0.8, 0, 0, true, AlternateSide(340), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(0.8, 0, 0, true, AlternateSide(342), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 targetArmPosition = JUNCTION_HIGH;
                 NewUpdateArm(false);
@@ -299,7 +297,7 @@ public class Manual_Macro extends OpMode {
                 NewUpdateArm(true);
 
                 //EncoderMove(0.8, -2.7, 2.7, 3);
-                EncoderTransform(1, 0, 0, true, AlternateSide(210), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
+                EncoderTransform(1, 0, 0, true, AlternateSide(205), 5); // TODO: TUNE ANGLE VALUE AND CHECK IF IT WORKS BEFOREHAND
 
                 adjustmentAllowed = true;
             }
@@ -504,7 +502,7 @@ public class Manual_Macro extends OpMode {
                 double margin = (absoluteTargetRot - GetHeading() + 360 * 10) % 360;
                 double dir = (margin > 180) ? 1 : -1;
 
-                if (Math.abs(margin) <= 8) break;
+                if (Math.abs(margin) <= 5) break;
 
                 backLM.setPower(power * dir);
                 frontLM.setPower(power * dir);
@@ -655,8 +653,8 @@ public class Manual_Macro extends OpMode {
         backRM.setDirection(DcMotorSimple.Direction.REVERSE);
 
         armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
-        armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armM.setDirection(DcMotorSimple.Direction.REVERSE);
+        armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armM.setTargetPosition(0);
         armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -703,7 +701,7 @@ public class Manual_Macro extends OpMode {
         telemetry.addData("Target Arm Position: ", targetArmPosition);
         telemetry.addData("Adjustment Allowed: ", adjustmentAllowed);
         telemetry.addData("Score Behaviour: ", scoringBehaviourRight ? "RIGHT" : "LEFT");
-        telemetry.addData("Field Centric Mode : ", fieldCentricRed ? "RED" : "BLUE");
+        telemetry.addData("Field Centric Mode: ", fieldCentricRed ? "RED" : "BLUE");
         telemetry.addData("Current Drive Mode: ", fieldCentricDrive ? "FIELD CENTRIC" : "ROBOT CENTRIC");
         telemetry.addData("Current Speed Mode: ", driveSpeedModifier == BASE_DRIVE_SPEED_MODIFIER ? "BASE SPEED" : "PRECISION MODE");
         telemetry.addData("IMU Yaw: ", GetHeading());

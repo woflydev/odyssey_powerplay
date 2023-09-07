@@ -18,7 +18,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 // TODO: THIS VERSION INCLUDES ARM CONTROLS FOR A SECONDARY GAMEPAD. ROBOT IS STILL OPERATIONAL THROUGH SINGLE GAMEPAD.
 
 @TeleOp()
-public class SNAPSHOT_Manual_Macro extends OpMode {
+public class SP1_Manual_Macro extends OpMode {
     // -------------------------------------------------------------- SYSTEM VAR
     private DcMotorEx backLM = null;
     private DcMotorEx backRM = null;
@@ -473,6 +473,7 @@ public class SNAPSHOT_Manual_Macro extends OpMode {
         armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         armM.setTargetPosition(0);
         armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armM.setDirection(DcMotorSimple.Direction.REVERSE);
         armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // -------------------------------------------------------------- IMU INIT
