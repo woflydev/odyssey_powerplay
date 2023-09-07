@@ -45,8 +45,12 @@ public class AprilTagOdometry extends LinearOpMode {
     // and the vision portal connects that pipeline to the camera and hardware
 
     public void runOpMode() {
+        positionList = new Vector[idList.length];
+        rotationList = new Vector[idList.length];
+        transformList = new Transform[idList.length];
+
         // Four sides of the field
-        for (int a = 0; a < positionList.length; a++) {
+        for (int a = 0; a < idList.length; a++) {
             positionList[a] = new Vector<>();
             rotationList[a] = new Vector<>();
             Collections.addAll(positionList[a], Math.sin(YAW_ANGLE * a) * FIELD_LENGTH / 2, -Math.cos(YAW_ANGLE * a) * FIELD_LENGTH / 2,CAMERA_HEIGHT);
@@ -93,9 +97,11 @@ public class AprilTagOdometry extends LinearOpMode {
             while (opModeIsActive()) {
                 List<AprilTagDetection> myAprilTagDetections = processor.getDetections();
                 List<Transform> transforms = new ArrayList<>();
-                for (AprilTagDetection detection : myAprilTagDetections) {
-                    if (detection.metadata != null) {
-                        transforms.add(TagOdometry(detection));
+                if (myAprilTagDetections.size() != 0) {
+                    for (AprilTagDetection detection : myAprilTagDetections) {
+                        if (detection.metadata != null) {
+                            transforms.add(TagOdometry(detection));
+                        }
                     }
                 }
                 currentTransform = Transform.smoothAvg(transforms);
