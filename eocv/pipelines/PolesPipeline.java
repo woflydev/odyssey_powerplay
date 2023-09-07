@@ -128,7 +128,7 @@ public class PolesPipeline extends OpenCvPipeline {
     private double [] oldPos = START_POS;
     private Mat oldMat = TranslationMatrix(START_POS);
     private Mat mapImg = Mat.zeros(new int[] {MAP_SIZE, MAP_SIZE, 3}, CvType.CV_8U);
-    BFMatcher matcher = new BFMatcher(Core.NORM_L2, true);
+    private BFMatcher matcher = new BFMatcher(Core.NORM_L2, true);
 
 
     private Mat hsv = new Mat();
@@ -258,7 +258,15 @@ public class PolesPipeline extends OpenCvPipeline {
                 }
                 if (newPts.length > 1) {
                     // Do stuff
-                    
+                    MatOfDMat matches = new MatOfDMat();
+                    matcher.match(TRUE_PTS, matches, newPts);
+                    matches = CustomSort(matches, x -> x.distance);
+                    MatOfDmat newMatches = new MatOfDMat();
+                    for (Match x in matches) {
+                        if (x.distance > 0.5) {
+                            newMatches.add(x);
+                        }
+                    }
                 }
             }
             srcPlane.release();
