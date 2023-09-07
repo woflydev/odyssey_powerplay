@@ -25,7 +25,7 @@ public class NewRobot_Test extends OpMode {
     private DcMotorEx backRM = null;
     private DcMotorEx frontLM = null;
     private DcMotorEx frontRM = null;
-    //private DcMotorEx armM = null;
+    private DcMotorEx armM = null;
     private IMU imu = null;
     //private Servo claw = null;
 
@@ -58,7 +58,7 @@ public class NewRobot_Test extends OpMode {
     private static final String BACK_LEFT = "backL";
     private static final String BACK_RIGHT = "backR";
     //rivate static final String SERVO_CLAW = "Servo";
-    //private static final String ARM_MOTOR = "armMotor";
+    private static final String ARM_MOTOR = "armMotor";
     private static final String HUB_IMU = "imu";
 
     //private static final double CLAW_CLOSE = 0.5;
@@ -71,8 +71,8 @@ public class NewRobot_Test extends OpMode {
     //private static final int ARM_BOOST_MODIFIER = 1;
     //private static final int ARM_RESET_TIMEOUT = 3;
 
-    private static final double MAX_ACCELERATION_DEVIATION = 1; // higher = less smoothing
-    private static final double BASE_DRIVE_SPEED_MODIFIER = 1.2; // higher = less speed
+    private static final double MAX_ACCELERATION_DEVIATION = 10; // higher = less smoothing
+    private static final double BASE_DRIVE_SPEED_MODIFIER = 1; // higher = less speed
     private static final double PRECISION_DRIVE_SPEED_MODIFIER = 3.35;
 
     private static final double PPR = 537.7; // gobuilda motor 85203 Series
@@ -652,12 +652,12 @@ public class NewRobot_Test extends OpMode {
         frontRM.setDirection(DcMotorSimple.Direction.REVERSE);
         backRM.setDirection(DcMotorSimple.Direction.REVERSE);
 
-//        armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
-//        armM.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//        armM.setDirection(DcMotorSimple.Direction.REVERSE);
-//        armM.setTargetPosition(0);
-//        armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//        armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armM = hardwareMap.get(DcMotorEx.class, ARM_MOTOR);
+        armM.setMode(DcMotor.RunMode.RUN_USING_ENCODER); // change back to pos
+        armM.setDirection(DcMotorSimple.Direction.REVERSE);
+        //armM.setTargetPosition(0);
+        //armM.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        armM.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // -------------------------------------------------------------- IMU INIT
 
@@ -666,8 +666,8 @@ public class NewRobot_Test extends OpMode {
         telemetry.update();
 
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
-                RevHubOrientationOnRobot.LogoFacingDirection.UP,
-                RevHubOrientationOnRobot.UsbFacingDirection.RIGHT
+                RevHubOrientationOnRobot.LogoFacingDirection.RIGHT,
+                RevHubOrientationOnRobot.UsbFacingDirection.UP
         ));
 
         imu = hardwareMap.get(IMU.class, HUB_IMU);
@@ -696,6 +696,14 @@ public class NewRobot_Test extends OpMode {
 
         if (gamepad1.start) { // re-calibrate field centric drive
             imu.resetYaw();
+        }
+
+        if (gamepad1.right_bumper) {
+            armM.setPower(1);
+        } else if (gamepad1.left_bumper) {
+            armM.setPower(-1);
+        } else {
+            armM.setPower(0);
         }
 
         // -------------------------------------------------------------- TELEMETRY
