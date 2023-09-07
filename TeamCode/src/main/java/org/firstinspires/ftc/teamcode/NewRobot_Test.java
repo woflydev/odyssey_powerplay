@@ -64,12 +64,12 @@ public class NewRobot_Test extends OpMode {
     //private static final double CLAW_CLOSE = 0.5;
     //private static final double CLAW_OPEN = 0.3;
 
-    //private static final int MAX_ARM_HEIGHT = 4050;
-    //private static final int MIN_ARM_HEIGHT = 0;
+    private static final int MAX_ARM_HEIGHT = 3200;
+    private static final int MIN_ARM_HEIGHT = -130;
 
-    //private static final int ARM_ADJUSTMENT_INCREMENT = 45;
-    //private static final int ARM_BOOST_MODIFIER = 1;
-    //private static final int ARM_RESET_TIMEOUT = 3;
+    private static final int ARM_ADJUSTMENT_INCREMENT = 45;
+    private static final int ARM_BOOST_MODIFIER = 1;
+    private static final int ARM_RESET_TIMEOUT = 3;
 
     private static final double MAX_ACCELERATION_DEVIATION = 10; // higher = less smoothing
     private static final double BASE_DRIVE_SPEED_MODIFIER = 1; // higher = less speed
@@ -578,42 +578,42 @@ public class NewRobot_Test extends OpMode {
         Delay(50);
     }
 
-//    private void NewUpdateArm(boolean reset) { // test new function
-//        armM.setTargetPosition(targetArmPosition);
-//
-//        if (reset) {
-//            armM.setTargetPosition(30);
-//            targetArmPosition = 30;
-//            armRuntime.reset();
-//
-//            // this while loop is blocking, therefore we don't use it
-//            /*while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
-//                armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
-//
-//                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
-//                    break;
-//                }
-//            }*/
-//
-//            if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
-//                armM.setVelocity(0);
-//            }
-//
-//            telemetry.update();
-//        }
-//
-//        else {
-//            armRuntime.reset();
-//            armM.setVelocity((double)2500 / ARM_BOOST_MODIFIER); // velocity used to be 1800
-//        }
-//    }
-//
-//    private void PassiveArmResetCheck() {
-//        if (armM.getCurrentPosition() <= 50 && targetArmPosition <= 50) {
-//            armM.setVelocity(0);
-//            resetTimer.reset();
-//        }
-//    }
+    private void NewUpdateArm(boolean reset) { // test new function
+        armM.setTargetPosition(targetArmPosition);
+
+        if (reset) {
+            armM.setTargetPosition(30);
+            targetArmPosition = 30;
+            armRuntime.reset();
+
+            // this while loop is blocking, therefore we don't use it
+            /*while (armM.getCurrentPosition() >= 50 || armRuntime.seconds() <= ARM_RESET_TIMEOUT) {
+                armM.setVelocity((double)2100 / ARM_BOOST_MODIFIER);
+
+                if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
+                    break;
+                }
+            }*/
+
+            if (armM.getCurrentPosition() <= 50 || armRuntime.seconds() >= ARM_RESET_TIMEOUT) {
+                armM.setVelocity(0);
+            }
+
+            telemetry.update();
+        }
+
+        else {
+            armRuntime.reset();
+            armM.setVelocity((double)2500 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+        }
+    }
+
+    private void PassiveArmResetCheck() {
+        if (armM.getCurrentPosition() <= 50 && targetArmPosition <= 50) {
+            armM.setVelocity(0);
+            resetTimer.reset();
+        }
+    }
 
     // -------------------------------------------------------------- MAIN INIT & LOOP
 
@@ -704,6 +704,16 @@ public class NewRobot_Test extends OpMode {
             armM.setPower(-1);
         } else {
             armM.setPower(0);
+        }
+
+        if ((gamepad1.right_trigger >= 0.6 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
+            targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
+            NewUpdateArm(false);
+        }
+
+        else if ((gamepad1.left_trigger >= 0.6 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
+            targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
+            NewUpdateArm(false);
         }
 
         // -------------------------------------------------------------- TELEMETRY
