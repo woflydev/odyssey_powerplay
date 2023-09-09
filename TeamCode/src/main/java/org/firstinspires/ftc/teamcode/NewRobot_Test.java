@@ -64,7 +64,7 @@ public class NewRobot_Test extends OpMode {
     //private static final double CLAW_CLOSE = 0.5;
     //private static final double CLAW_OPEN = 0.3;
 
-    private static final int MAX_ARM_HEIGHT = 3200;
+    private static final int MAX_ARM_HEIGHT = 3250;
     private static final int MIN_ARM_HEIGHT = -130;
 
     private static final int ARM_ADJUSTMENT_INCREMENT = 45;
@@ -604,7 +604,7 @@ public class NewRobot_Test extends OpMode {
 
         else {
             armRuntime.reset();
-            armM.setVelocity((double)2500 / ARM_BOOST_MODIFIER); // velocity used to be 1800
+            armM.setVelocity((double)2500 / 3); // velocity used to be 1800
         }
     }
 
@@ -698,14 +698,6 @@ public class NewRobot_Test extends OpMode {
             imu.resetYaw();
         }
 
-        if (gamepad1.right_bumper) {
-            armM.setPower(1);
-        } else if (gamepad1.left_bumper) {
-            armM.setPower(-1);
-        } else {
-            armM.setPower(0);
-        }
-
         if ((gamepad1.right_trigger >= 0.6 || gamepad2.right_trigger >= 0.5) && armM.getCurrentPosition() < MAX_ARM_HEIGHT - ARM_ADJUSTMENT_INCREMENT) {
             targetArmPosition += ARM_ADJUSTMENT_INCREMENT;
             NewUpdateArm(false);
@@ -714,6 +706,24 @@ public class NewRobot_Test extends OpMode {
         else if ((gamepad1.left_trigger >= 0.6 || gamepad2.left_trigger >= 0.5) && armM.getCurrentPosition() > MIN_ARM_HEIGHT + ARM_ADJUSTMENT_INCREMENT) {
             targetArmPosition -= ARM_ADJUSTMENT_INCREMENT;
             NewUpdateArm(false);
+        }
+
+        if (gamepad1.right_bumper) {
+            armM.setPower(0.3);
+        } else if (gamepad1.left_bumper) {
+            armM.setPower(-0.3);
+        } else {
+            armM.setPower(0);
+        }
+
+        if (gamepad1.dpad_up) {
+            targetArmPosition = MAX_ARM_HEIGHT;
+            NewUpdateArm(false);
+        }
+
+        else if (gamepad1.dpad_down) {
+            targetArmPosition = MIN_ARM_HEIGHT;
+            NewUpdateArm(true);
         }
 
         // -------------------------------------------------------------- TELEMETRY
